@@ -17,8 +17,13 @@ C4_SUPPRESS_WARNING_GCC("-Wfloat-equal")
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_spinner.h"
+#ifdef QUICKGUI_BUILD_TESTS
+#include <imgui_test_engine/imgui_te_engine.h>
+#include <imgui_test_engine/imgui_te_ui.h>
+#include <imgui_test_engine/imgui_te_context.h>
+#endif
 #include "implot.h"
+#include "imgui_spinner.h"
 #define IMGUIFS_NO_EXTRA_METHODS
 #include "imguifilesystem.h"
 #undef IMGUIFS_NO_EXTRA_METHODS

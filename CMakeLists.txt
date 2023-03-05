@@ -63,7 +63,7 @@ c4_add_library(quickgui
 
 #-------------------------------------------------
 
-if(QUICKGUI_DEV)
+if(QUICKGUI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
