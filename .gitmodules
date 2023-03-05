@@ -13,3 +13,6 @@
 [submodule "ext/c4fs"]
 	path = ext/c4fs
 	url = https://github.com/biojppm/c4fs
+[submodule "ext/imgui_test_engine"]
+	path = ext/imgui_test_engine
+	url = https://github.com/ocornut/imgui_test_engine
