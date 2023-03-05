@@ -1,0 +1,15 @@
+[submodule "ext/c4core"]
+	path = ext/c4core
+	url = https://github.com/biojppm/c4core
+[submodule "ext/SDL"]
+	path = ext/SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "ext/imgui"]
+	path = ext/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "ext/implot"]
+	path = ext/implot
+	url = https://github.com/epezent/implot
+[submodule "ext/c4fs"]
+	path = ext/c4fs
+	url = https://github.com/biojppm/c4fs
