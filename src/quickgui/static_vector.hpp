@@ -326,6 +326,9 @@ public:
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+C4_SUPPRESS_WARNING_MSVC_PUSH
+C4_SUPPRESS_WARNING_MSVC(4625)  // copy constructor was implicitly defined as deleted
+C4_SUPPRESS_WARNING_MSVC(4626)  // assignment operator was implicitly defined as deleted
 /** a chameleon that is reusable as a collection of any types.
  * @warning does not construct or destroy */
 struct reusable_buffer
@@ -347,6 +350,7 @@ struct reusable_buffer
         return ptr;
     }
 };
+C4_SUPPRESS_WARNING_MSVC_POP
 
 } // namespace quickgui
 
