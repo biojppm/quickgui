@@ -10,13 +10,13 @@ endif()
 c4_require_subproject(sdl2 SUBDIRECTORY ${QUICKGUI_EXT_DIR}/SDL
     OVERRIDE
         SDL_TEST OFF
+        SDL2_DISABLE_SDL2MAIN ON
+        SDL2_DISABLE_UNINSTALL ON
         ${QUICKGUI_SDL_OVERRIDE}
-    SET_FOLDER_TARGETS
-        ext/SDL
+    SET_FOLDER_TARGETS ext/SDL
         SDL2
         SDL2-static
-        SDL2main
-        uninstall
+        sdl_headers_copy
     )
 
 c4_target_compile_flags(${QUICKGUI_SDL} PRIVATE
