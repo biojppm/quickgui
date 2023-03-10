@@ -80,6 +80,7 @@ GCC_CLANG
     -Wno-format-nonliteral
     -Wno-shadow
     -Wno-unused-parameter
+    -Wno-unused-variable
     -Wno-unused-result
     -Wno-unused-function
 CLANG
