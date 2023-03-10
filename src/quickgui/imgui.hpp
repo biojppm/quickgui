@@ -15,6 +15,11 @@ C4_SUPPRESS_WARNING_GCC("-Wdouble-promotion")
 C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 C4_SUPPRESS_WARNING_GCC("-Wfloat-equal")
 
+C4_SUPPRESS_WARNING_MSVC_PUSH
+C4_SUPPRESS_WARNING_MSVC(4355) // 'this': used in base member initializer list
+C4_SUPPRESS_WARNING_MSVC(5039) // 'qsort': pointer or reference to potentially throwing function passed to 'extern "C"' function under -EHc. Undefined behavior may occur if this function throws an exception.
+C4_SUPPRESS_WARNING_MSVC(5219) // implicit conversion from 'int' to 'float', possible loss of data
+
 #include "imgui.h"
 #include "imgui_internal.h"
 #ifdef QUICKGUI_BUILD_TESTS
@@ -45,6 +50,7 @@ C4_ALWAYS_INLINE C4_CONST float  norm(ImVec2 vec) noexcept { return sqrt(vec.x *
 C4_ALWAYS_INLINE C4_CONST float  rnorm(ImVec2 vec) noexcept { return 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); }
 C4_ALWAYS_INLINE C4_CONST ImVec2 versor(ImVec2 vec) noexcept { float rs = 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); return ImVec2{vec.x * rs, vec.y * rs}; }
 
+C4_SUPPRESS_WARNING_MSVC_POP
 C4_SUPPRESS_WARNING_CLANG_POP
 C4_SUPPRESS_WARNING_GCC_POP
 

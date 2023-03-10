@@ -100,4 +100,5 @@ MSVC
     /wd4505  # '_wreaddir': unreferenced local function has been removed
     /wd4706  # assignment within conditional expression
     /wd4996  # This function or variable may be unsafe
+    /wd5219  # implicit conversion from 'int' to 'float', possible loss of data
 )
