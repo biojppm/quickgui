@@ -18,17 +18,20 @@ struct ddrect { ddvec min, max; };
 
 struct DebugDrawList
 {
-    typedef enum { point, line, rect, rect_filled, poly } PrimitiveType_e;
+    typedef enum { text, point, line, rect, rect_filled, poly, circle, ring_filled } PrimitiveType_e;
     struct Primitive
     {
         Primitive() : point(), color(), thickness(), type() {}
         union
         {
+            struct { ddvec p; uint32_t first_char, num_chars; } text;
             struct { ddvec p;    } point;
             struct { ddvec p, q; } line;
             struct { ddrect r;   } rect;
             struct { ddrect r;   } rect_filled;
             struct { uint32_t first_point, num_points; } poly;
+            struct { ddvec center; float radius; uint32_t num_segments; } circle;
+            struct { ddvec center; float inner_radius, outer_radius; uint32_t inner_color, outer_color; uint32_t num_segments; } ring_filled;
         };
         uint32_t color;
         float thickness;
@@ -37,21 +40,25 @@ struct DebugDrawList
 
     std::vector<Primitive> m_primitives;
     std::vector<ddvec>     m_points;
+    std::vector<char>      m_characters;
 
 public:
 
     DebugDrawList()
         : m_primitives()
         , m_points()
+        , m_characters()
     {
         m_primitives.reserve(64);
         m_points.reserve(256);
+        m_points.reserve(1024);
     }
 
     void clear()
     {
         m_primitives.clear();
         m_points.clear();
+        m_characters.clear();
     }
 
     size_t curr() const
@@ -60,6 +67,25 @@ public:
     }
 
 public:
+
+    void draw_text(ddvec p, const char* txt, uint32_t color, float thickness) noexcept
+    {
+        draw_text(p, txt, strlen(txt), color, thickness);
+    }
+
+    void draw_text(ddvec p, const char* txt, uint32_t txt_len, uint32_t color, float thickness) noexcept
+    {
+        const size_t first = m_characters.size();
+        m_characters.resize(m_characters.size() + txt_len);
+        memcpy(&m_characters[first], txt, (size_t)txt_len);
+        auto& prim = m_primitives.emplace_back();
+        prim.type = text;
+        prim.text.p = p;
+        prim.text.first_char = (uint32_t)first;
+        prim.text.num_chars = txt_len;
+        prim.color = color;
+        prim.thickness = thickness;
+    }
 
     void draw_point(ddvec p, uint32_t color, float thickness) noexcept
     {
@@ -111,6 +137,32 @@ public:
         m_points.resize(first + num_points);
         return &m_points[first];
     }
+
+    void draw_circle(ddvec center, float radius, uint32_t num_segments, uint32_t color, float thickness) noexcept
+    {
+        auto& prim = m_primitives.emplace_back();
+        prim.type = circle;
+        prim.circle.center = center;
+        prim.circle.radius = radius;
+        prim.circle.num_segments = num_segments;
+        prim.color = color;
+        prim.thickness = thickness;
+    }
+
+    void draw_ring_filled(ddvec center, float inner_radius, float outer_radius, uint32_t inner_color, uint32_t outer_color, uint32_t num_segments, uint32_t shade_color, float thickness) noexcept
+    {
+        auto& prim = m_primitives.emplace_back();
+        prim.type = ring_filled;
+        prim.ring_filled.center = center;
+        prim.ring_filled.inner_radius = inner_radius;
+        prim.ring_filled.outer_radius = outer_radius;
+        prim.ring_filled.inner_color = inner_color;
+        prim.ring_filled.outer_color = outer_color;
+        prim.ring_filled.num_segments = num_segments;
+        prim.color = shade_color;
+        prim.thickness = thickness;
+    }
+
 };
 
 
@@ -186,36 +238,23 @@ struct MultithreadDebugDrawList
 
 public:
 
-    template<class ...Args>
-    void draw_point(size_t thread_id, Args&& ...args) noexcept
-    {
-        _claim(thread_id).draw_point(std::forward<Args>(args)...);
+#define _C4_DEFINE_DRAW_FN(name) \                                      \
+    template<class ...Args>                                             \
+    auto draw_##name(size_t thread_id, Args&& ...args) noexcept         \
+    {                                                                   \
+        return _claim(thread_id).draw_##name(std::forward<Args>(args)...); \
     }
 
-    template<class ...Args>
-    void draw_line(size_t thread_id, Args&& ...args) noexcept
-    {
-        _claim(thread_id).draw_line(std::forward<Args>(args)...);
-    }
+    _C4_DEFINE_DRAW_FN(text)
+    _C4_DEFINE_DRAW_FN(point)
+    _C4_DEFINE_DRAW_FN(line)
+    _C4_DEFINE_DRAW_FN(rect)
+    _C4_DEFINE_DRAW_FN(rect_filled)
+    _C4_DEFINE_DRAW_FN(poly)
+    _C4_DEFINE_DRAW_FN(circle)
+    _C4_DEFINE_DRAW_FN(ring_filled)
 
-    template<class ...Args>
-    void draw_rect(size_t thread_id, Args&& ...args) noexcept
-    {
-        _claim(thread_id).draw_rect(std::forward<Args>(args)...);
-    }
-
-    template<class ...Args>
-    void draw_rect_filled(size_t thread_id, Args&& ...args) noexcept
-    {
-        _claim(thread_id).draw_rect_filled(std::forward<Args>(args)...);
-    }
-
-    /** returns a buffer where the poly points can be written */
-    template<class ...Args>
-    ddvec* draw_poly(size_t thread_id, Args&& ...args) noexcept
-    {
-        return _claim(thread_id).draw_poly(std::forward<Args>(args)...);
-    }
+#undef _C4_DEFINE_DRAW_FN
 };
 
 } // namespace quickgui
