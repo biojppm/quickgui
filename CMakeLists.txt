@@ -14,7 +14,7 @@ option(QUICKGUI_VULKAN_DEBUG "use the vulkan debug layers" ON)
 
 #-------------------------------------------------------
 
-c4_require_subproject(c4core SUBDIRECTORY ${QUICKGUI_EXT_DIR}/c4core SET_FOLDER_TARGETS ext c4core)
+c4_require_subproject(c4core SUBDIRECTORY ${QUICKGUI_EXT_DIR}/c4core SET_FOLDER_TARGETS ext c4core c4core-amalgamate)
 c4_require_subproject(c4fs SUBDIRECTORY ${QUICKGUI_EXT_DIR}/c4fs SET_FOLDER_TARGETS ext c4fs)
 include(./ext/sdl.cmake)
 include(./ext/imgui.cmake)
