@@ -1,5 +1,5 @@
-#ifndef STQ_GUI_SDL_HPP_
-#define STQ_GUI_SDL_HPP_
+#ifndef QUICKGUI_GUI_SDL_HPP_
+#define QUICKGUI_GUI_SDL_HPP_
 
 #include <c4/error.hpp>
 
@@ -10,4 +10,4 @@ C4_SUPPRESS_WARNING_GCC("-Wdouble-promotion")
 #include <SDL.h>
 C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
-#endif /* STQ_GUI_SDL_HPP_ */
+#endif /* QUICKGUI_GUI_SDL_HPP_ */
