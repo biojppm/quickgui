@@ -1,5 +1,5 @@
-#ifndef QUICKGUI_DEBUG_DRAW_HPP_
-#define QUICKGUI_DEBUG_DRAW_HPP_
+#ifndef QUICKGUI_PRIMITIVE_DRAW_HPP_
+#define QUICKGUI_PRIMITIVE_DRAW_HPP_
 
 #include <vector>
 #include <cstddef>
@@ -16,7 +16,8 @@ struct ddvec { float x, y; };
 //! to avoid the need to include imgui.h, we define a compatible rectangle type
 struct ddrect { ddvec min, max; };
 
-struct DebugDrawList
+/** this is meant for use in non-gui facing code, so it doesn't bring imgui.h */
+struct PrimitiveDrawList
 {
     typedef enum { text, point, line, rect, rect_filled, poly, circle, ring_filled } PrimitiveType_e;
     struct Primitive
@@ -30,8 +31,7 @@ struct DebugDrawList
             struct { ddrect r;   } rect;
             struct { ddrect r;   } rect_filled;
             struct { uint32_t first_point, num_points; } poly;
-            struct { ddvec center; float radius; uint32_t num_segments; } circle;
-            struct { ddvec center; float inner_radius, outer_radius; uint32_t inner_color, outer_color; uint32_t num_segments; } ring_filled;
+            struct { ddvec center; float radius; } circle;
         };
         uint32_t color;
         float thickness;
@@ -44,14 +44,14 @@ struct DebugDrawList
 
 public:
 
-    DebugDrawList()
+    PrimitiveDrawList()
         : m_primitives()
         , m_points()
         , m_characters()
     {
         m_primitives.reserve(64);
-        m_points.reserve(256);
         m_points.reserve(1024);
+        m_characters.reserve(256);
     }
 
     void clear()
@@ -138,33 +138,17 @@ public:
         return &m_points[first];
     }
 
-    void draw_circle(ddvec center, float radius, uint32_t num_segments, uint32_t color, float thickness) noexcept
+    void draw_circle(ddvec center, float radius, uint32_t color, float thickness) noexcept
     {
         auto& prim = m_primitives.emplace_back();
         prim.type = circle;
         prim.circle.center = center;
         prim.circle.radius = radius;
-        prim.circle.num_segments = num_segments;
         prim.color = color;
         prim.thickness = thickness;
     }
-
-    void draw_ring_filled(ddvec center, float inner_radius, float outer_radius, uint32_t inner_color, uint32_t outer_color, uint32_t num_segments, uint32_t shade_color, float thickness) noexcept
-    {
-        auto& prim = m_primitives.emplace_back();
-        prim.type = ring_filled;
-        prim.ring_filled.center = center;
-        prim.ring_filled.inner_radius = inner_radius;
-        prim.ring_filled.outer_radius = outer_radius;
-        prim.ring_filled.inner_color = inner_color;
-        prim.ring_filled.outer_color = outer_color;
-        prim.ring_filled.num_segments = num_segments;
-        prim.color = shade_color;
-        prim.thickness = thickness;
-    }
-
 };
 
 } // namespace quickgui
 
-#endif /* QUICKGUI_DEBUG_DRAW_HPP_ */
+#endif /* QUICKGUI_PRIMITIVE_DRAW_HPP_ */

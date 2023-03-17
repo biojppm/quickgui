@@ -1,20 +1,20 @@
-#ifndef QUICKGUI_VIDEO_OVERLAY_CANVAS_HPP_
-#define QUICKGUI_VIDEO_OVERLAY_CANVAS_HPP_
+#ifndef QUICKGUI_OVERLAY_CANVAS_HPP_
+#define QUICKGUI_OVERLAY_CANVAS_HPP_
 
-#include <quickgui/debug_draw_list.hpp>
+#include <quickgui/primitive_draw_list.hpp>
 #include <quickgui/math.hpp>
 #include <quickgui/color.hpp>
 #include <quickgui/imgui.hpp>
 
-struct VideoOverlayCanvas : public quickgui::DebugDrawList
+namespace quickgui {
+struct OverlayCanvas
 {
-public:
+    std::vector<ddvec> m_transformed_points;
 
-    VideoOverlayCanvas() : quickgui::DebugDrawList() {}
+    OverlayCanvas() : m_transformed_points() { m_transformed_points.reserve(128); }
 
-public:
-
-    void draw(ImDrawList *draw_list, ImVec2 video_size, ImVec2 canvas_cursor, ImVec2 canvas_size);
+    void draw(PrimitiveDrawList const& primitives, ImVec2 primitives_subject_size,
+              ImVec2 canvas_position, ImVec2 canvas_size, ImDrawList *draw_list);
 
     static inline constexpr const float s_point_square_size = 0.01f; // relative to canvas size
     static inline constexpr const float s_min_point_square_size = 10.f; // min absolute pixels
@@ -26,5 +26,6 @@ public:
     }
 
 };
+} // namespace quickgui
 
-#endif /* QUICKGUI_VIDEO_OVERLAY_CANVAS_HPP_ */
+#endif /* QUICKGUI_OVERLAY_CANVAS_HPP_ */

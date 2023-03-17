@@ -1,13 +1,13 @@
-#ifndef QUICKGUI_DEBUG_DRAW_LIST_MULTITHREAD_HPP_
-#define QUICKGUI_DEBUG_DRAW_LIST_MULTITHREAD_HPP_
+#ifndef QUICKGUI_PRIMITIVE_DRAW_LIST_MULTITHREAD_HPP_
+#define QUICKGUI_PRIMITIVE_DRAW_LIST_MULTITHREAD_HPP_
 
 #include <atomic>
 
-#include "quickgui/debug_draw_list.hpp"
+#include "quickgui/primitive_draw_list.hpp"
 
 namespace quickgui {
 
-struct DebugDrawListMultithread
+struct PrimitiveDrawListMultithread
 {
     struct PrimitiveData
     {
@@ -96,4 +96,4 @@ public:
 
 } // namespace quickgui
 
-#endif /* QUICKGUI_DEBUG_DRAW_HPP_ */
+#endif /* QUICKGUI_PRIMITIVE_DRAW_HPP_ */

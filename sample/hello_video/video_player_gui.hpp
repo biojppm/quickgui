@@ -12,18 +12,18 @@ struct VideoPlayerGui
 {
     static inline constexpr const uint32_t num_entries = quickgui::DynamicImage::RhiImage::num_entries;
 
-    QuickguiVideoReader       m_reader;
-    bool              m_first_render;
-    bool              m_playing;
-    bool              m_load_paused_frame;
-    bool              m_reader_frame_ready;
-    bool              m_show_video_window;
+    QuickguiVideoReader m_reader;
+    bool                m_first_render;
+    bool                m_playing;
+    bool                m_load_paused_frame;
+    bool                m_reader_frame_ready;
+    bool                m_show_video_window;
     quickgui::DynamicImage      m_img;
     quickgui::GuiAssets::Image  m_gui[num_entries];
-    bool              m_gui_flipped;
-    bool              m_gui_display_on;
-    int               m_gui_display_size;
-    int               m_gui_display_size_item;
+    bool                m_gui_flipped;
+    bool                m_gui_display_on;
+    int                 m_gui_display_size;
+    int                 m_gui_display_size_item;
 
     VideoPlayerGui(quickgui::VideoSource const& src)
         : m_reader(src, true)
@@ -147,10 +147,7 @@ struct VideoPlayerGui
         // widget: video
         _render_video_size_widget();
         ImVec2 dims = {(float)m_gui_display_size, (float)m_gui_display_size};
-        // flip vertically. This is purely a render-flip; possibly
-        // we should do this with the pixel data itself, but I'm
-        // not sure what the algorithm uses, so for now we leave
-        // it like this
+        // flip vertically. This is purely a render-flip.
         if(m_gui_flipped)
         {
             g.uv_botr.y = 0.f;
@@ -199,7 +196,7 @@ struct VideoPlayerGui
         {
             g.display(dims);
         }
-        draw_glyphs_fn(ImGui::GetWindowDrawList(), cursor, dims);
+        draw_glyphs_fn(cursor, dims, ImGui::GetWindowDrawList());
         ImGui::End();
     }
 

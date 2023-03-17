@@ -11,8 +11,11 @@ c4_project(VERSION 0.0.1
 #-------------------------------------------------------
 option(QUICKGUI_VULKAN_DEBUG "use the vulkan debug layers" ON)
 option(QUICKGUI_USE_OPENCV "" OFF)
-if(QUICKGUI_USE_OPENCV)
-    option(QUICKGUI_USE_FFMPEG "" ON)
+option(QUICKGUI_USE_FFMPEG "" OFF) # WIP
+if(QUICKGUI_USE_OPENCV OR QUICKGUI_USE_FFMPEG)
+    set(QUICKGUI_VIDEO_ENABLED ON)
+else()
+    set(QUICKGUI_VIDEO_ENABLED OFF)
 endif()
 
 
@@ -34,8 +37,6 @@ endif()
 c4_add_library(quickgui
     SOURCES
         src/quickgui/color.hpp
-        src/quickgui/debug_draw_list.hpp
-        src/quickgui/debug_draw_list_multithread.hpp
         src/quickgui/gui.cpp
         src/quickgui/gui.hpp
         src/quickgui/imgui.hpp
@@ -45,17 +46,21 @@ c4_add_library(quickgui
         src/quickgui/imgui_impl_vulkan.h
         src/quickgui/imgview.cpp
         src/quickgui/imgview.hpp
-        src/quickgui/log.hpp
         src/quickgui/log.cpp
+        src/quickgui/log.hpp
         src/quickgui/math.hpp
         src/quickgui/mem.hpp
+        src/quickgui/overlay_canvas.cpp
+        src/quickgui/overlay_canvas.hpp
+        src/quickgui/primitive_draw_list.hpp
+        src/quickgui/primitive_draw_list_multithread.hpp
         src/quickgui/rhi.cpp
         src/quickgui/rhi.hpp
         src/quickgui/sdl.hpp
         src/quickgui/static_vector.hpp
         src/quickgui/stb_image.h
-        src/quickgui/stb_image_data.hpp
         src/quickgui/stb_image_data.cpp
+        src/quickgui/stb_image_data.hpp
         src/quickgui/string.hpp
         src/quickgui/time.cpp
         src/quickgui/time.hpp
@@ -89,18 +94,22 @@ if(QUICKGUI_USE_OPENCV)
             ${QUICKGUI_OPENCV_LIBRARIES}
         )
 endif()
-c4_add_library(quickgui-video
-    SOURCES
-        src/quickgui/video/video_frame.hpp
-        src/quickgui/video/video_reader.hpp
-        src/quickgui/video/video_reader.cpp
-        src/quickgui/video/video_source.hpp
-    INC_DIRS
-        $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}> $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
-    LIBS
-        quickgui
-        $<$<BOOL:${QUICKGUI_USE_OPENCV}>:quickgui-cvutil>
-)
+
+
+if(QUICKGUI_VIDEO_ENABLED)
+    c4_add_library(quickgui-video
+        SOURCES
+            src/quickgui/video/video_frame.hpp
+            src/quickgui/video/video_reader.hpp
+            src/quickgui/video/video_reader.cpp
+            src/quickgui/video/video_source.hpp
+        INC_DIRS
+            $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}> $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
+        LIBS
+            quickgui
+            $<$<BOOL:${QUICKGUI_USE_OPENCV}>:quickgui-cvutil>
+    )
+endif()
 
 
 #-------------------------------------------------

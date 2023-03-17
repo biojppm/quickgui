@@ -1,7 +1,7 @@
 #include <quickgui/widgets.hpp>
 #include <quickgui/video/video_source.hpp>
 #include "./video_player_gui.hpp"
-#include "./video_overlay_canvas.hpp"
+#include <quickgui/overlay_canvas.hpp>
 
 void draw_hello_world();
 
@@ -12,16 +12,18 @@ int main()
     if (!quickgui::gui_init(gcfg))
         return -1;
 
-
-    VideoOverlayCanvas overlay_canvas;
     quickgui::VideoFrame frame = {};
     quickgui::VideoSource video_source = {};
     video_source.source_type = quickgui::VideoSource::CAMERA;
     video_source.camera.index = 0;
     VideoPlayerGui video_player(video_source);
     VideoPlayerGui::Commands video_player_commands;
-    auto draw_glyphs = [&video_player, &overlay_canvas](ImDrawList *draw_list, ImVec2 canvas_pos, ImVec2 canvas_dims){
-        overlay_canvas.draw(draw_list, video_player.dims(), canvas_pos, canvas_dims);
+
+    quickgui::PrimitiveDrawList primitives = {};
+    quickgui::OverlayCanvas overlay_canvas = {};
+    auto draw_glyphs = [&video_player, &primitives, &overlay_canvas]
+        (ImVec2 canvas_pos, ImVec2 canvas_dims, ImDrawList *draw_list){
+        overlay_canvas.draw(primitives, video_player.dims(), canvas_pos, canvas_dims, draw_list);
     };
 
     while (true)
@@ -31,7 +33,7 @@ int main()
         // do work here
         if(video_player.update(&frame))
         {
-            overlay_canvas.clear();
+            primitives.clear();
         }
         // draw the gui
         {
