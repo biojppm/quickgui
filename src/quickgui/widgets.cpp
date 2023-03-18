@@ -102,6 +102,27 @@ void set_tooltip(const char *tooltip)
     }
 }
 
+//-----------------------------------------------------------------------------
+
+bool compact_color_picker(const char *title, ucolor *color, const char *tooltip)
+{
+    fcolor f = *color;
+    bool ret = compact_color_picker(title, &f, tooltip);
+    if(ret)
+        *color = (ucolor)(f);
+    return ret;
+}
+
+bool compact_color_picker(const char *title, fcolor *color, const char *tooltip)
+{
+    C4_SUPPRESS_WARNING_GCC_WITH_PUSH("-Wstrict-aliasing")
+    ImGuiColorEditFlags flags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel;
+    bool ret = ImGui::ColorEdit4(title, (float*)color, flags);
+    if(tooltip)
+        set_tooltip(tooltip);
+    return ret;
+}
+
 
 //-----------------------------------------------------------------------------
 

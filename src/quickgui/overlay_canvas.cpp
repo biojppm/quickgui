@@ -3,18 +3,13 @@
 namespace quickgui {
 
 
-C4_CONST C4_ALWAYS_INLINE ImVec2 const& conv(ddvec  const& vi) noexcept { return (ImVec2 const&)vi; }
-C4_CONST C4_ALWAYS_INLINE ImVec2      & conv(ddvec       & vi) noexcept { return (ImVec2      &)vi; }
-C4_CONST C4_ALWAYS_INLINE ddvec  const& conv(ImVec2 const& vi) noexcept { return (ddvec  const&)vi; }
-C4_CONST C4_ALWAYS_INLINE ddvec       & conv(ImVec2      & vi) noexcept { return (ddvec       &)vi; }
-
 void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_subject_size,
                          ImVec2 canvas_position, ImVec2 canvas_size, ImDrawList *draw_list)
 {
     // https://github.com/ocornut/imgui/issues/1415
     // a lambda to transform from video coordinates to canvas coordinates
-    auto tr = [vsize=primitives_subject_size, csize=canvas_size, cursor=canvas_position](ddvec v){
-        return cursor + csize * conv(v) / vsize;
+    auto tr = [vsize=primitives_subject_size, csize=canvas_size, cursor=canvas_position](ImVec2 v){
+        return cursor + csize * v / vsize;
     };
     const float hps = _half_point_size(canvas_size);
     for(PrimitiveDrawList::Primitive const& prim : primitives.m_primitives)
@@ -52,12 +47,12 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         }
         case PrimitiveDrawList::rect:
         {
-            draw_list->AddRect(tr(prim.rect.r.min), tr(prim.rect.r.max), prim.color);
+            draw_list->AddRect(tr(prim.rect.r.Min), tr(prim.rect.r.Max), prim.color);
             break;
         }
         case PrimitiveDrawList::rect_filled:
         {
-            draw_list->AddRectFilled(tr(prim.rect.r.min), tr(prim.rect.r.max), prim.color);
+            draw_list->AddRectFilled(tr(prim.rect.r.Min), tr(prim.rect.r.Max), prim.color);
             break;
         }
         case PrimitiveDrawList::poly:
@@ -65,16 +60,11 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             // need to transform all the points; we do it in place
             m_transformed_points.resize(prim.poly.num_points);
             for(uint32_t p = prim.poly.first_point; p < prim.poly.num_points; ++p)
-                m_transformed_points[p] = conv(tr(primitives.m_points[p]));
-            draw_list->AddPolyline(&conv(m_transformed_points[0]), (int)prim.poly.num_points, prim.color, /*flags*/{}, prim.thickness);
+                m_transformed_points[p] = tr(primitives.m_points[p]);
+            draw_list->AddPolyline(&m_transformed_points[0], (int)prim.poly.num_points, prim.color, /*flags*/{}, prim.thickness);
             break;
         }
         case PrimitiveDrawList::circle:
-        {
-            draw_list->AddCircle(tr(prim.circle.center), prim.circle.radius, prim.color);
-            break;
-        }
-        case PrimitiveDrawList::ring_filled:
         {
             draw_list->AddCircle(tr(prim.circle.center), prim.circle.radius, prim.color);
             break;

@@ -6,13 +6,13 @@
 #include <quickgui/time.hpp>
 #include <quickgui/mem.hpp>
 #include <quickgui/video/video_frame.hpp>
-#include "./video_reader.hpp"
+#include "./sample_video_reader.hpp"
 
-struct VideoPlayerGui
+struct SampleVideoPlayer
 {
     static inline constexpr const uint32_t num_entries = quickgui::DynamicImage::RhiImage::num_entries;
 
-    QuickguiVideoReader m_reader;
+    SampleVideoReader m_reader;
     bool                m_first_render;
     bool                m_playing;
     bool                m_load_paused_frame;
@@ -25,7 +25,7 @@ struct VideoPlayerGui
     int                 m_gui_display_size;
     int                 m_gui_display_size_item;
 
-    VideoPlayerGui(quickgui::VideoSource const& src)
+    SampleVideoPlayer(quickgui::VideoSource const& src)
         : m_reader(src, true)
         , m_first_render(true)
         , m_playing(false)
@@ -36,8 +36,8 @@ struct VideoPlayerGui
         , m_gui()
         , m_gui_flipped(false)
         , m_gui_display_on(true)
-        , m_gui_display_size(2048)
-        , m_gui_display_size_item(4)
+        , m_gui_display_size(512)
+        , m_gui_display_size_item(2)
     {
         //VkFormat fmt = VK_FORMAT_R8G8B8_UNORM;
         //VkFormat fmt = VK_FORMAT_R8_UNORM;//imgview_format(m_reader.data_type(), m_reader.num_channels());

@@ -12,11 +12,6 @@ namespace quickgui {
 namespace widgets {
 
 inline constexpr const char task_name_start_prog[] = "start_prog";
-inline constexpr const char color_tooltip_text[] =
-        "Click on the color square to open a color picker.\n"
-        "Click and hold to use drag and drop.\n"
-        "Right-click on the color square to show options.\n"
-        "CTRL+click on individual component to input value.\n";
 
 
 struct FilePicker
@@ -69,6 +64,9 @@ void set_tooltip(const char *tooltip);
 
 /** returns true if the checkbox was changed */
 bool checkbox_negated(const char *title, bool *var);
+
+bool compact_color_picker(const char * title, ucolor *color, const char *tooltip=nullptr);
+bool compact_color_picker(const char * title, fcolor *color, const char *tooltip=nullptr);
 
 ImRect get_current_plot_rect();
 

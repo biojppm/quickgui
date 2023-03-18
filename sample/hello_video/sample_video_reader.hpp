@@ -39,7 +39,7 @@ inline void convert(imgviewbuf const& src, imgviewbuf &dst)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-struct QuickguiVideoReader
+struct SampleVideoReader
 {
     quickgui::VideoReader m_reader;
     imgviewbuf        m_vframe_1ch_video;
@@ -52,7 +52,7 @@ struct QuickguiVideoReader
     imgviewbuf       *m_vframe_vflip; // the flipped frame from the original video
     std::vector<char> m_vframe_flip_workspace;
 
-    QuickguiVideoReader(quickgui::VideoSource const& src, bool force_4ch=false)
+    SampleVideoReader(quickgui::VideoSource const& src, bool force_4ch=false)
         : m_reader(src)
         , m_vframe_1ch_video()
         , m_vframe_1ch_vflip()

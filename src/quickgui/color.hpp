@@ -105,6 +105,18 @@ inline ucolor::operator fcolor() const noexcept
     return fcolor(r, g, b, a);
 }
 
+inline ucolor alpha(ucolor c, uint8_t alpha)
+{
+    c.a = alpha;
+    return c;
+}
+
+inline ucolor alpha(fcolor c, float alpha)
+{
+    c.a = alpha;
+    return c;
+}
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

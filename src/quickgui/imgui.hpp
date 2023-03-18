@@ -49,6 +49,8 @@ C4_ALWAYS_INLINE C4_CONST float  dot(ImVec2 vec) noexcept { return vec.x * vec.x
 C4_ALWAYS_INLINE C4_CONST float  norm(ImVec2 vec) noexcept { return sqrt(vec.x * vec.x + vec.y * vec.y); }
 C4_ALWAYS_INLINE C4_CONST float  rnorm(ImVec2 vec) noexcept { return 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); }
 C4_ALWAYS_INLINE C4_CONST ImVec2 versor(ImVec2 vec) noexcept { float rs = 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); return ImVec2{vec.x * rs, vec.y * rs}; }
+C4_ALWAYS_INLINE C4_CONST float  maxof(ImVec2 vec) noexcept { return vec.x > vec.y ? vec.x : vec.y; }
+C4_ALWAYS_INLINE C4_CONST float  minof(ImVec2 vec) noexcept { return vec.x < vec.y ? vec.x : vec.y; }
 
 C4_SUPPRESS_WARNING_MSVC_POP
 C4_SUPPRESS_WARNING_CLANG_POP

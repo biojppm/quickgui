@@ -4,12 +4,11 @@
 #include <quickgui/primitive_draw_list.hpp>
 #include <quickgui/math.hpp>
 #include <quickgui/color.hpp>
-#include <quickgui/imgui.hpp>
 
 namespace quickgui {
 struct OverlayCanvas
 {
-    std::vector<ddvec> m_transformed_points;
+    std::vector<ImVec2> m_transformed_points;
 
     OverlayCanvas() : m_transformed_points() { m_transformed_points.reserve(128); }
 

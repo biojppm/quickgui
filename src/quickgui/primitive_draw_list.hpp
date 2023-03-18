@@ -6,32 +6,29 @@
 #include <cstdint>
 #include <cstring>
 #include <c4/error.hpp>
-
+#include <c4/substr.hpp>
+#include "quickgui/imgui.hpp"
 
 namespace quickgui {
 
-//! to avoid the need to include imgui.h, we define a compatible vector type
-struct ddvec { float x, y; };
-
-//! to avoid the need to include imgui.h, we define a compatible rectangle type
-struct ddrect { ddvec min, max; };
-
-/** this is meant for use in non-gui facing code, so it doesn't bring imgui.h */
+/** this is meant for use in non-gui facing code, so it doesn't
+ * include imgui.h. For that reason, the vectors are non-imgui
+ * types. */
 struct PrimitiveDrawList
 {
-    typedef enum { text, point, line, rect, rect_filled, poly, circle, ring_filled } PrimitiveType_e;
+    typedef enum { text, point, line, rect, rect_filled, poly, circle } PrimitiveType_e;
     struct Primitive
     {
         Primitive() : point(), color(), thickness(), type() {}
         union
         {
-            struct { ddvec p; uint32_t first_char, num_chars; } text;
-            struct { ddvec p;    } point;
-            struct { ddvec p, q; } line;
-            struct { ddrect r;   } rect;
-            struct { ddrect r;   } rect_filled;
+            struct { ImVec2 p; uint32_t first_char, num_chars; } text;
+            struct { ImVec2 p;    } point;
+            struct { ImVec2 p, q; } line;
+            struct { ImRect r;    } rect;
+            struct { ImRect r;    } rect_filled;
             struct { uint32_t first_point, num_points; } poly;
-            struct { ddvec center; float radius; } circle;
+            struct { ImVec2 center; float radius; } circle;
         };
         uint32_t color;
         float thickness;
@@ -39,7 +36,7 @@ struct PrimitiveDrawList
     };
 
     std::vector<Primitive> m_primitives;
-    std::vector<ddvec>     m_points;
+    std::vector<ImVec2>    m_points;
     std::vector<char>      m_characters;
 
 public:
@@ -68,26 +65,21 @@ public:
 
 public:
 
-    void draw_text(ddvec p, const char* txt, uint32_t color, float thickness) noexcept
-    {
-        draw_text(p, txt, (uint32_t)strlen(txt), color, thickness);
-    }
-
-    void draw_text(ddvec p, const char* txt, uint32_t txt_len, uint32_t color, float thickness) noexcept
+    void draw_text(c4::csubstr txt, ImVec2 p, uint32_t color, float thickness) noexcept
     {
         const size_t first = m_characters.size();
-        m_characters.resize(m_characters.size() + txt_len);
-        memcpy(&m_characters[first], txt, (size_t)txt_len);
+        m_characters.resize(m_characters.size() + txt.size());
+        memcpy(&m_characters[first], txt.data(), txt.size());
         auto& prim = m_primitives.emplace_back();
         prim.type = text;
         prim.text.p = p;
         prim.text.first_char = (uint32_t)first;
-        prim.text.num_chars = txt_len;
+        prim.text.num_chars = (uint32_t)txt.size();
         prim.color = color;
         prim.thickness = thickness;
     }
 
-    void draw_point(ddvec p, uint32_t color, float thickness) noexcept
+    void draw_point(ImVec2 p, uint32_t color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = point;
@@ -96,7 +88,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_line(ddvec p, ddvec q, uint32_t color, float thickness) noexcept
+    void draw_line(ImVec2 p, ImVec2 q, uint32_t color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = line;
@@ -106,7 +98,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_rect(ddrect r, uint32_t color, float thickness) noexcept
+    void draw_rect(ImRect r, uint32_t color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = rect;
@@ -115,7 +107,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_rect_filled(ddrect r, uint32_t color, float thickness) noexcept
+    void draw_rect_filled(ImRect r, uint32_t color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = rect_filled;
@@ -125,7 +117,7 @@ public:
     }
 
     /** returns a buffer where the poly points can be written */
-    ddvec* draw_poly(uint32_t num_points, uint32_t color, float thickness) noexcept
+    ImVec2* draw_poly(uint32_t num_points, uint32_t color, float thickness) noexcept
     {
         const uint32_t first = (uint32_t)m_points.size();
         auto &prim = m_primitives.emplace_back();
@@ -138,7 +130,7 @@ public:
         return &m_points[first];
     }
 
-    void draw_circle(ddvec center, float radius, uint32_t color, float thickness) noexcept
+    void draw_circle(ImVec2 center, float radius, uint32_t color, float thickness) noexcept
     {
         auto& prim = m_primitives.emplace_back();
         prim.type = circle;
