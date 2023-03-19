@@ -12,6 +12,7 @@ c4_project(VERSION 0.0.1
 option(QUICKGUI_VULKAN_DEBUG "use the vulkan debug layers" ON)
 option(QUICKGUI_USE_OPENCV "" OFF)
 option(QUICKGUI_USE_FFMPEG "" OFF) # WIP
+option(QUICKGUI_USE_FLATBUFFERS "" OFF) # WIP
 if(QUICKGUI_USE_OPENCV OR QUICKGUI_USE_FFMPEG)
     set(QUICKGUI_VIDEO_ENABLED ON)
 else()
@@ -29,6 +30,9 @@ include(./ext/imgui.cmake)
 find_package(Vulkan REQUIRED)
 if(QUICKGUI_USE_OPENCV)
     include(./ext/opencv.cmake)
+endif()
+if(QUICKGUI_USE_FLATBUFFERS)
+    include(./ext/flatbuffers.cmake)
 endif()
 
 

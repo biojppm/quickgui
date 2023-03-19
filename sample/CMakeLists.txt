@@ -16,3 +16,7 @@ if(QUICKGUI_VIDEO_ENABLED)
           quickgui-video
     )
 endif()
+
+if(QUICKGUI_USE_FLATBUFFERS)
+    add_subdirectory(hello_remote)
+endif()

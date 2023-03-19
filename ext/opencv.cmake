@@ -64,7 +64,6 @@ else()
             opencv_videoio
             opencv_visualisation
             )
-
     # opencv is usually obtained from a prior install.
     # but we're using inside our cmake build directory,
     # so there's some other things we need to do.
