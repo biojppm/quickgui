@@ -5,7 +5,7 @@ project(quickgui
     LANGUAGES CXX C)
 c4_project(VERSION 0.0.1
     CXX_STANDARD 17
-    AUTHOR "joaoppmagalhaes@gmail.com")
+    AUTHOR "dev@jpmag.me")
 
 
 #-------------------------------------------------------

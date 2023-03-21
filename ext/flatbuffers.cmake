@@ -2,9 +2,8 @@
 option(QUICKGUI_FLATBUFFERS_BUILD "" ON)
 
 if(NOT QUICKGUI_FLATBUFFERS_BUILD)
-    c4_err("not implemented")
-    find_package(flatbuffers REQUIRED)
-    set(QUICKGUI_FLATC $<TARGET_FILE:flatc>)
+    find_library(flatbuffers REQUIRED)
+    find_program(QUICKGUI_FLATC flatc REQUIRED)
 else()
     set(QUICKGUI_FLATBUFFERS_REPO https://github.com/google/flatbuffers CACHE STRING "")
     set(QUICKGUI_FLATBUFFERS_VERSION v23.3.3 CACHE STRING "")
@@ -25,73 +24,63 @@ endif()
 
 
 #----------------------------------------------------
-# adapted from flatbuffers' CMakeLists.txt
 
+set(FLATBUFFERS_DEFAULT_CPP_FLAGS
+    --cpp --gen-mutable --gen-object-api --reflect-names
+)
 
-function(flatbuffers_compile_schema_to_cpp_opt schema OPT generated_files)
-  message(STATUS "`${schema}`: add generation of C++ code with '${OPT}'")
-  get_filename_component(schema_dir ${schema} PATH)
-  if("${schema_dir}" STREQUAL "")
-      set(schema_dir ${CMAKE_CURRENT_SOURCE_DIR})
-  endif()
-  string(REGEX REPLACE "\\.fbs$" "_generated.hpp" gen_header ${schema})
-  set(gen_header ${schema_dir}/${gen_header})
-  add_custom_command(
-    OUTPUT ${gen_header}
-    COMMAND ${QUICKGUI_FLATC}
-            --cpp --gen-mutable --gen-object-api --reflect-names
-            ${OPT}
-            -o "${schema_dir}"
-            "${schema}"
-    COMMENT "Run generation: '${gen_header}'")
-  set(genfiles ${${generated_files}})
-  list(APPEND genfiles ${gen_header})
-  set(${generated_files} ${genfiles} PARENT_SCOPE)
-endfunction()
-
-
-function(flatbuffers_compile_schema_to_cpp schema generated_files)
-  set(genfiles ${${generated_files}})
-  flatbuffers_compile_schema_to_cpp_opt(${schema} "--no-includes;--gen-compare" genfiles)
-  set(${generated_files} ${genfiles} PARENT_SCOPE)
-endfunction()
-
-
-function(flatbuffers_compile_schema_to_binary schema generated_files)
-  message(STATUS "`${schema}`: add generation of binary (.bfbs) schema")
-  get_filename_component(schema_dir ${schema} PATH)
-  string(REGEX REPLACE "\\.fbs$" ".bfbs" gen_binary_schema ${schema})
-  # For details about flags see generate_code.py
-  add_custom_command(
-    OUTPUT ${gen_binary_schema}
-    COMMAND ${QUICKGUI_FLATC}
-            -b --schema --bfbs-comments --bfbs-builtins
-            --bfbs-filenames "${CMAKE_CURRENT_SOURCE_DIR}/${schema_dir}"
-            -o "${schema_dir}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/${schema}"
-    COMMENT "Run generation: '${gen_binary_schema}'")
-  set(genfiles ${${generated_files}})
-  list(APPEND genfiles ${gen_binary_schema})
-  set(${generated_files} ${genfiles} PARENT_SCOPE)
-endfunction()
-
-
-function(flatbuffers_compile_schema_to_embedded_binary schema OPT generated_files)
-  message(STATUS "`${schema}`: add generation of C++ embedded binary schema code with '${OPT}'")
-  get_filename_component(schema_dir ${schema} PATH)
-  string(REGEX REPLACE "\\.fbs$" "_bfbs_generated.h" gen_bfbs_header ${schema})
-  # For details about flags see generate_code.py
-  add_custom_command(
-    COMMAND ${QUICKGUI_FLATC}
-          --cpp --gen-mutable --gen-object-api --reflect-names
-          --cpp-ptr-type flatbuffers::unique_ptr # Used to test with C++98 STLs
-          ${OPT}
-          --bfbs-comments --bfbs-builtins --bfbs-gen-embed
-          --bfbs-filenames ${schema_dir}
-          -o "${schema_dir}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/${schema}"
-          COMMENT "Run generation: '${gen_bfbs_header}'")
-  set(genfiles ${${generated_files}})
-  list(APPEND genfiles ${gen_bfbs_header})
-  set(${generated_files} ${genfiles} PARENT_SCOPE)
+function(flatbuffers_compile_schema_to_cpp schema_rel)
+    _c4_handle_args(_ARGS ${ARGN}
+        _ARGS0
+          GRPC      # enable GRPC
+          NO_DEFAULT_OPTIONS # do not use FLATBUFFERS_DEFAULT_CPP_FLAGS
+        _ARGS1
+          API_ROOT  # common part to add to the path
+          GENDIR    # path to the directory where to generate the files
+          GENFILES  # variable to append the generated files
+          INC_DIR   # variable to output the include directory
+        _ARGSN
+          FLATC_OPTIONS  # options to pass to flatc (other than FLATBUFFERS_DEFAULT_CPP_FLAGS)
+    )
+    message(STATUS "${schema_rel}: add generation of C++ code")
+    if(NOT _API_ROOT)
+        message(FATAL_ERROR "needs API_ROOT")
+    endif()
+    # create the full filename of the schema
+    set(schema ${_API_ROOT}/${schema_rel})
+    # get the intermediate path
+    get_filename_component(schema_dirname ${schema_rel} PATH)
+    get_filename_component(schema_basename ${schema} NAME)
+    set(gen_root "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_generated")
+    set(gen_dir "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_generated/${schema_dirname}")
+    file(MAKE_DIRECTORY ${gen_dir})
+    if(_INC_DIR)
+        set(${_INC_DIR} ${gen_root} PARENT_SCOPE)
+    endif()
+    string(REGEX REPLACE "\\.fbs$" "_generated.h" gen_header ${gen_dir}/${schema_basename})
+    set(genfiles ${gen_header})
+    if(_GRPC)
+        string(REGEX REPLACE "\\.fbs$" ".grpc.fb.h" gen_grpc_h ${gen_dir}/${schema_basename})
+        string(REGEX REPLACE "\\.fbs$" ".grpc.fb.cc" gen_grpc_cc ${gen_dir}/${schema_basename})
+        list(APPEND genfiles ${gen_grpc_h} ${gen_grpc_cc})
+    endif()
+    if(_GENFILES)
+        set(${_GENFILES} ${${_GENFILES}} ${genfiles} PARENT_SCOPE)
+    endif()
+    set(opts)
+    if(NOT _NO_DEFAULT_OPTIONS)
+        set(opts ${FLATBUFFERS_DEFAULT_CPP_FLAGS})
+    endif()
+    set(opts ${opts} ${FLATC_OPTIONS})
+    set(cmd ${QUICKGUI_FLATC}
+                -I "${_API_ROOT}"
+                -o "${gen_dir}"
+                ${opts}
+                $<$<BOOL:${_GRPC}>:--grpc>
+                ${schema})
+    add_custom_command(OUTPUT ${genfiles}
+        DEPENDS ${schema}
+        COMMAND echo ${cmd}
+        COMMAND ${cmd}
+        COMMENT "flatbuffers C++: ${schema_rel}")
 endfunction()

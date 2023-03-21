@@ -1,4 +1,5 @@
 #include <quickgui/widgets.hpp>
+#include "client.hpp"
 
 void draw_hello_world();
 
