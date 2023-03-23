@@ -109,15 +109,14 @@ bool compact_color_picker(const char *title, ucolor *color, const char *tooltip)
     fcolor f = *color;
     bool ret = compact_color_picker(title, &f, tooltip);
     if(ret)
-        *color = (ucolor)(f);
+        *color = ucolor(f);
     return ret;
 }
 
 bool compact_color_picker(const char *title, fcolor *color, const char *tooltip)
 {
-    C4_SUPPRESS_WARNING_GCC_WITH_PUSH("-Wstrict-aliasing")
     ImGuiColorEditFlags flags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel;
-    bool ret = ImGui::ColorEdit4(title, (float*)color, flags);
+    bool ret = ImGui::ColorEdit4(title, &color->r, flags);
     if(tooltip)
         set_tooltip(tooltip);
     return ret;

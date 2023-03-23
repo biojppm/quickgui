@@ -34,6 +34,8 @@ struct imgview
         case data_i32:
         case data_f32:
             return 4u;
+        default:
+            break;
         }
         C4_ERROR("unknown data type");
         return 0u;
