@@ -19,7 +19,15 @@ struct PrimitiveDrawList
     typedef enum { text, point, line, rect, rect_filled, poly, circle } PrimitiveType_e;
     struct Primitive
     {
-        Primitive() : point(), color(), thickness(), type() {}
+        C4_SUPPRESS_WARNING_MSVC_PUSH
+        C4_SUPPRESS_WARNING_MSVC(4582) // constructor is not implicitly called
+        Primitive()
+            : rect_filled()
+            , color()
+            , thickness()
+            , type()
+        {}
+        C4_SUPPRESS_WARNING_MSVC_POP
         union
         {
             struct { ImVec2 p; uint32_t first_char, num_chars; } text;
