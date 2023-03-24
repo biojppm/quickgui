@@ -521,14 +521,18 @@ void gui_end_frame(ImVec4 clear_color)
 
 quickgui::GuiAssets g_gui_assets;
 
-void GuiAssets::Image::load_existing(rhi::image_id img, rhi::sampler_id sampler)
+void GuiImage::load_existing(rhi::image_id img, rhi::sampler_id sampler)
 {
     img_id = img;
     view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
     desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
 }
+void GuiImage::load_existing(rhi::image_id img)
+{
+    load_existing(img, g_gui_assets.default_sampler);
+}
 
-void GuiAssets::Image::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
 {
     img_id = load_image_2d_rgba(filename, layout, img_data, &rhi::g_rhi, cmd_buf);
     view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
@@ -536,8 +540,13 @@ void GuiAssets::Image::load(const char *filename, ccharspan img_data, rhi::Image
     rhi::g_rhi.set_name(view_id, filename);
     desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
 }
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout)
+{
+    load(filename, img_data, layout, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
 
-void GuiAssets::Image::load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
+void GuiImage::load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
 {
     img_id = load_image_2d_rgba(filename, &rhi::g_rhi, cmd_buf);
     view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
@@ -545,14 +554,25 @@ void GuiAssets::Image::load(const char *filename, rhi::sampler_id sampler, VkCom
     rhi::g_rhi.set_name(view_id, filename);
     desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
 }
+void GuiImage::load(const char *filename)
+{
+    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
 
-ImVec2 GuiAssets::Image::size(float scale) const
+void GuiImage::destroy()
+{
+    rhi::g_rhi.destroy_image(img_id);
+    rhi::g_rhi.destroy_image_view(view_id);
+}
+
+ImVec2 GuiImage::size(float scale) const
 {
     auto const& rhi_img = rhi::g_rhi.get_image(img_id);
     return ImVec2((float)rhi_img.layout.width * scale, (float)rhi_img.layout.height * scale);
 }
 
-ImVec2 GuiAssets::Image::size_with_width(float width, float scale) const
+ImVec2 GuiImage::size_with_width(float width, float scale) const
 {
     auto const& rhi_img = rhi::g_rhi.get_image(img_id);
     float w = (float)rhi_img.layout.width;
@@ -560,7 +580,7 @@ ImVec2 GuiAssets::Image::size_with_width(float width, float scale) const
     return ImVec2(width * scale, h * width / w * scale);
 }
 
-ImVec2 GuiAssets::Image::size_with_height(float height, float scale) const
+ImVec2 GuiImage::size_with_height(float height, float scale) const
 {
     auto const& rhi_img = rhi::g_rhi.get_image(img_id);
     float w = (float)rhi_img.layout.width;
@@ -568,12 +588,12 @@ ImVec2 GuiAssets::Image::size_with_height(float height, float scale) const
     return ImVec2(w * height / h * scale, height * scale);
 }
 
-void GuiAssets::Image::display(float scale) const
+void GuiImage::display(float scale) const
 {
     ImGui::Image((ImTextureID)desc_set, size(scale), uv_topl, uv_botr, tint_color, border_color);
 }
 
-void GuiAssets::Image::display(ImVec2 display_size) const
+void GuiImage::display(ImVec2 display_size) const
 {
     ImGui::Image((ImTextureID)desc_set, display_size, uv_topl, uv_botr, tint_color, border_color);
 }

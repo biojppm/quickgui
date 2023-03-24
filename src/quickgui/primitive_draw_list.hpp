@@ -11,9 +11,6 @@
 
 namespace quickgui {
 
-/** this is meant for use in non-gui facing code, so it doesn't
- * include imgui.h. For that reason, the vectors are non-imgui
- * types. */
 struct PrimitiveDrawList
 {
     typedef enum { text, point, line, rect, rect_filled, poly, circle } PrimitiveType_e;

@@ -692,6 +692,12 @@ fence_id FenceCollection::reset(fence_id id, VkFenceCreateInfo const& info, VkDe
     return id;
 }
 
+void FenceCollection::destroy(fence_id id, VkDevice v, VkAllocationCallbacks const* a)
+{
+    handle_type &handle = get_handle(id);
+    C4_DESTROY_VK(vkDestroyFence, v, handle, a);
+}
+
 void FenceCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)
 {
     for(auto &fence : handles)
@@ -712,6 +718,11 @@ buffer_id BufferCollection::reset(buffer_id id, VkBufferCreateInfo const& nfo, u
     buf.destroy(dev, alloc);
     buf.create(nfo, mem_type, dev, alloc);
     return id;
+}
+
+void BufferCollection::destroy(buffer_id id, VkDevice v, VkAllocationCallbacks const* a)
+{
+    get_handle(id).destroy(v, a);
 }
 
 void BufferCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)
@@ -758,6 +769,11 @@ image_id ImageCollection::reset(image_id id, VkImageCreateInfo const& C4_RESTRIC
     img.destroy(dev, alloc);
     img.create(nfo, mem_bits, dev, alloc);
     return id;
+}
+
+void ImageCollection::destroy(image_id id, VkDevice v, VkAllocationCallbacks const* a)
+{
+    get_handle(id).destroy(v, a);
 }
 
 void ImageCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)
@@ -848,6 +864,11 @@ image_view_id ImageViewCollection::reset(image_view_id id, Image const& img, VkD
     return id;
 }
 
+void ImageViewCollection::destroy(image_view_id id, VkDevice v, VkAllocationCallbacks const* a)
+{
+    C4_DESTROY_VK(vkDestroyImageView, v, get_handle(id), a);
+}
+
 void ImageViewCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)
 {
     for(auto &imgview: handles)
@@ -868,6 +889,11 @@ sampler_id SamplerCollection::reset(sampler_id id, VkSamplerCreateInfo const& in
     C4_DESTROY_VK(vkDestroySampler, dev, handle, alloc);
     C4_CHECK_VK(vkCreateSampler(dev, &info, alloc, &handle));
     return id;
+}
+
+void SamplerCollection::destroy(sampler_id id, VkDevice v, VkAllocationCallbacks const* a)
+{
+    C4_DESTROY_VK(vkDestroySampler, v, get_handle(id), a);
 }
 
 void SamplerCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)

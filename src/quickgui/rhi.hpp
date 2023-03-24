@@ -263,14 +263,16 @@ struct HandleCollection
     /** an opaque type-safe id */
     class id_type
     {
-        size_t _id = (size_t)-1;
         friend struct HandleCollection;
+    protected:
+        size_t _id = (size_t)-1;
     public:
         inline operator bool () const { return _id != (size_t)-1; }
     };
 
 public:
 
+    using handle_type = HandleType;
     std::vector<HandleType> handles;
 
     template<class ...CtorArgs>
@@ -300,6 +302,7 @@ public:
 struct FenceCollection : public HandleCollection<VkFence>
 {
     id_type reset(id_type id, VkFenceCreateInfo const& info, VkDevice dev, VkAllocationCallbacks const* alloc);
+    void destroy(id_type id, VkDevice dev, VkAllocationCallbacks const* alloc);
     void destroy_all(VkDevice dev, VkAllocationCallbacks const* alloc);
 };
 using fence_id = FenceCollection::id_type;
@@ -308,6 +311,7 @@ using fence_id = FenceCollection::id_type;
 struct BufferCollection : public HandleCollection<Buffer>
 {
     id_type reset(id_type id, VkBufferCreateInfo const& C4_RESTRICT info, uint32_t mem_bits, VkDevice dev, VkAllocationCallbacks const* alloc);
+    void destroy(id_type id, VkDevice dev, VkAllocationCallbacks const* alloc);
     void destroy_all(VkDevice dev, VkAllocationCallbacks const* alloc);
 };
 using buffer_id = BufferCollection::id_type;
@@ -316,6 +320,7 @@ using buffer_id = BufferCollection::id_type;
 struct ImageCollection : public HandleCollection<Image>
 {
     id_type reset(id_type id, VkImageCreateInfo const& C4_RESTRICT nfo, uint32_t mem_bits, VkDevice dev, VkAllocationCallbacks const* alloc);
+    void destroy(id_type id, VkDevice dev, VkAllocationCallbacks const* alloc);
     void destroy_all(VkDevice dev, VkAllocationCallbacks const* alloc);
 };
 using image_id = ImageCollection::id_type;
@@ -324,6 +329,7 @@ using image_id = ImageCollection::id_type;
 struct ImageViewCollection : public HandleCollection<VkImageView>
 {
     id_type reset(id_type id, Image const& img, VkDevice dev, VkAllocationCallbacks const* alloc);
+    void destroy(id_type id, VkDevice dev, VkAllocationCallbacks const* alloc);
     void destroy_all(VkDevice dev, VkAllocationCallbacks const* alloc);
 };
 using image_view_id = ImageViewCollection::id_type;
@@ -332,6 +338,7 @@ using image_view_id = ImageViewCollection::id_type;
 struct SamplerCollection : public HandleCollection<VkSampler>
 {
     id_type reset(id_type id, VkSamplerCreateInfo const& info, VkDevice dev, VkAllocationCallbacks const* alloc);
+    void destroy(id_type id, VkDevice dev, VkAllocationCallbacks const* alloc);
     void destroy_all(VkDevice dev, VkAllocationCallbacks const* alloc);
 };
 using sampler_id = SamplerCollection::id_type;
@@ -365,6 +372,7 @@ struct Rhi
     // fences
     [[nodiscard]] fence_id make_fence(VkFenceCreateInfo const& info) { return m_fences.reset({}, info, m_device, m_allocator); }
     [[nodiscard]] fence_id reset_fence(fence_id id, VkFenceCreateInfo const& info) { return m_fences.reset(id, info, m_device, m_allocator); }
+    void          destroy_fence(fence_id id) { return m_fences.destroy(id, m_device, m_allocator); }
     VkFence       get_fence(fence_id id)        { return m_fences.get_handle(id); }
     VkFence       get_fence(fence_id id) const  { return m_fences.get_handle(id); }
     void          set_name (fence_id id     , const char *name) { debug_marker_set_name(m_device, get_fence(id), name); }
@@ -373,6 +381,7 @@ struct Rhi
     // buffers
     [[nodiscard]] buffer_id make_buffer(VkBufferCreateInfo const& info, uint32_t mem_bits) { return m_buffers.reset({}, info, mem_bits, m_device, m_allocator); }
     [[nodiscard]] buffer_id reset_buffer(buffer_id id, VkBufferCreateInfo const& info, uint32_t mem_bits) { return m_buffers.reset(id, info, mem_bits, m_device, m_allocator); }
+    void          destroy_buffer(buffer_id id) { return m_buffers.destroy(id, m_device, m_allocator); }
     Buffer      & get_buffer(buffer_id id)        { return m_buffers.get_handle(id); }
     Buffer const& get_buffer(buffer_id id) const  { return m_buffers.get_handle(id); }
     void          set_name  (buffer_id id     , const char *name) { debug_marker_set_name(m_device, get_buffer(id).handle, name); }
@@ -381,6 +390,7 @@ struct Rhi
     // images
     [[nodiscard]] image_id make_image(VkImageCreateInfo const& C4_RESTRICT nfo, uint32_t mem_bits=VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) { return m_images.reset({}, nfo, mem_bits, m_device, m_allocator); }
     [[nodiscard]] image_id reset_image(image_id id, VkImageCreateInfo const& C4_RESTRICT nfo, uint32_t mem_bits=VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) { return m_images.reset(id, nfo, mem_bits, m_device, m_allocator); }
+    void         destroy_image(image_id id) { return m_images.destroy(id, m_device, m_allocator); }
     Image      & get_image   (image_id id)        { return m_images.get_handle(id); }
     Image const& get_image   (image_id id) const  { return m_images.get_handle(id); }
     void         set_name    (image_id id     , const char *name) { debug_marker_set_name(m_device, get_image(id).handle, name); }
@@ -390,6 +400,7 @@ struct Rhi
     // image views
     [[nodiscard]] image_view_id make_image_view(Image const& img) { return m_image_views.reset({}, img, m_device, m_allocator); }
     [[nodiscard]] image_view_id reset_image_view(image_view_id id, Image const& img) { return m_image_views.reset(id, img, m_device, m_allocator); }
+    void               destroy_image_view(image_view_id id) { return m_image_views.destroy(id, m_device, m_allocator); }
     VkImageView      & get_image_view(image_view_id id)       { return m_image_views.get_handle(id); }
     VkImageView const& get_image_view(image_view_id id) const { return m_image_views.get_handle(id); }
     void               set_name      (image_view_id id, const char *name) { debug_marker_set_name(m_device, get_image_view(id), name); }
@@ -399,6 +410,7 @@ struct Rhi
     SamplerBuilder   build_sampler() const { return SamplerBuilder(); }
     [[nodiscard]] sampler_id make_sampler(SamplerBuilder const& b) { return m_samplers.reset({}, b, m_device, m_allocator); }
     [[nodiscard]] sampler_id reset_sampler(sampler_id id, SamplerBuilder const& b) { return m_samplers.reset(id, b, m_device, m_allocator); }
+    void             destroy_sampler(sampler_id id) { return m_samplers.destroy(id, m_device, m_allocator); }
     VkSampler      & get_sampler (sampler_id id)       { return m_samplers.get_handle(id); }
     VkSampler const& get_sampler (sampler_id id) const { return m_samplers.get_handle(id); }
     void             set_name    (sampler_id id       , const char *name) { debug_marker_set_name(m_device, get_sampler(id), name); }

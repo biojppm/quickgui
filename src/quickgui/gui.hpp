@@ -37,31 +37,34 @@ void gui_end_frame(ImVec4 background);
 using GuiEventHandler = bool (*)(SDL_Event const& event, void *data);
 void gui_iter_events(GuiEventHandler fn, void *data);
 
+struct GuiImage
+{
+    rhi::image_id      img_id = {};
+    rhi::image_view_id view_id = {};
+    VkDescriptorSet    desc_set = {};
+    ImVec2             uv_topl = {0.f, 0.f};
+    ImVec2             uv_botr = {1.f, 1.f};
+    ImVec4             tint_color = {1.f, 1.f, 1.f, 1.f};
+    ImVec4             border_color = {0.f, 0.f, 0.f, 0.f};
+    void load_existing(rhi::image_id id);
+    void load_existing(rhi::image_id id, rhi::sampler_id sampler);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
+    void load(const char *filename);
+    void load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
+    void destroy();
+    rhi::ImageLayout const& layout() const { return rhi::g_rhi.get_image(img_id).layout; }
+    void display(float scale=1.f) const;
+    void display(ImVec2 display_size) const;
+    ImVec2 size(float scale=1.f) const;
+    ImVec2 size_with_width(float width, float scale=1.f) const;
+    ImVec2 size_with_height(float height, float scale=1.f) const;
+};
 
 struct GuiAssets
 {
-    struct Image
-    {
-        rhi::image_id      img_id = {};
-        rhi::image_view_id view_id = {};
-        VkDescriptorSet    desc_set = {};
-        ImVec2             uv_topl = {0.f, 0.f};
-        ImVec2             uv_botr = {1.f, 1.f};
-        ImVec4             tint_color = {1.f, 1.f, 1.f, 1.f};
-        ImVec4             border_color = {0.f, 0.f, 0.f, 0.f};
-        void load_existing(rhi::image_id id, rhi::sampler_id sampler);
-        void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
-        void load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
-        rhi::ImageLayout const& layout() const { return rhi::g_rhi.get_image(img_id).layout; }
-        void display(float scale=1.f) const;
-        void display(ImVec2 display_size) const;
-        ImVec2 size(float scale=1.f) const;
-        ImVec2 size_with_width(float width, float scale=1.f) const;
-        ImVec2 size_with_height(float height, float scale=1.f) const;
-    };
-
+    using Image = GuiImage; // remove this
     rhi::sampler_id default_sampler;
-
     void acquire(VkCommandBuffer cmd_buf);
     void release();
 };
