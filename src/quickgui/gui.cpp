@@ -566,10 +566,20 @@ void GuiImage::destroy()
     rhi::g_rhi.destroy_image_view(view_id);
 }
 
+ImVec2 GuiImage::size() const
+{
+    auto const& rhi_img = rhi::g_rhi.get_image(img_id);
+    float w = (float)rhi_img.layout.width;
+    float h = (float)rhi_img.layout.height;
+    return ImVec2(w, h);
+}
+
 ImVec2 GuiImage::size(float scale) const
 {
     auto const& rhi_img = rhi::g_rhi.get_image(img_id);
-    return ImVec2((float)rhi_img.layout.width * scale, (float)rhi_img.layout.height * scale);
+    float w = (float)rhi_img.layout.width;
+    float h = (float)rhi_img.layout.height;
+    return ImVec2(w * scale, h * scale);
 }
 
 ImVec2 GuiImage::size_with_width(float width, float scale) const
@@ -586,6 +596,22 @@ ImVec2 GuiImage::size_with_height(float height, float scale) const
     float w = (float)rhi_img.layout.width;
     float h = (float)rhi_img.layout.height;
     return ImVec2(w * height / h * scale, height * scale);
+}
+
+ImVec2 GuiImage::size_with_maxdim(float maxval, float scale) const
+{
+    auto const& rhi_img = rhi::g_rhi.get_image(img_id);
+    float w = (float)rhi_img.layout.width;
+    float h = (float)rhi_img.layout.height;
+    return (w > h) ? size_with_width(maxval, scale) : size_with_height(maxval, scale);
+}
+
+ImVec2 GuiImage::size_with_mindim(float minval, float scale) const
+{
+    auto const& rhi_img = rhi::g_rhi.get_image(img_id);
+    float w = (float)rhi_img.layout.width;
+    float h = (float)rhi_img.layout.height;
+    return (w < h) ? size_with_width(minval, scale) : size_with_height(minval, scale);
 }
 
 void GuiImage::display(float scale) const

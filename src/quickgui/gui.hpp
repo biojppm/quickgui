@@ -56,9 +56,14 @@ struct GuiImage
     rhi::ImageLayout const& layout() const { return rhi::g_rhi.get_image(img_id).layout; }
     void display(float scale=1.f) const;
     void display(ImVec2 display_size) const;
-    ImVec2 size(float scale=1.f) const;
+    ImVec2 size() const;
+    ImVec2 size(float scale) const;
     ImVec2 size_with_width(float width, float scale=1.f) const;
     ImVec2 size_with_height(float height, float scale=1.f) const;
+    /** size with dimensions at most */
+    ImVec2 size_with_maxdim(float maxval, float scale=1.f) const;
+    /** size with dimensions at least */
+    ImVec2 size_with_mindim(float minval, float scale=1.f) const;
 };
 
 struct GuiAssets
