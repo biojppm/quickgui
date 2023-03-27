@@ -11,8 +11,6 @@ namespace quickgui {
 
 namespace widgets {
 
-inline constexpr const char task_name_start_prog[] = "start_prog";
-
 
 struct FilePicker
 {
