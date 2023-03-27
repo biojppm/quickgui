@@ -22,6 +22,11 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
     auto tr = [ssize=primitives_subject_size, csize=canvas_size, cpos=canvas_position](ImVec2 v){
         return cpos + csize * (v / ssize);
     };
+    // transform a length
+    auto trlen = [ssize=minof(primitives_subject_size), csize=minof(canvas_size)](float len){
+        return csize * (len / ssize);
+    };
+    // shadow offset position
     auto sh = [csize=canvas_size, offs=_shadow_offset(canvas_size)](ImVec2 p){
         return p + offs;
     };
@@ -120,10 +125,11 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         case PrimitiveDrawList::circle:
         {
             const ImVec2 center = tr(prim.circle.center);
+            const float radius = trlen(prim.circle.radius);
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow)
-                draw_list->AddCircle(sh(center), prim.circle.radius, shad);
-            draw_list->AddCircle(center, prim.circle.radius, prim.color);
+                draw_list->AddCircle(sh(center), radius, shad);
+            draw_list->AddCircle(center, radius, prim.color);
             break;
         }
         default:
