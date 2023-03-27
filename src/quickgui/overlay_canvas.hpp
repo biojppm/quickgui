@@ -17,11 +17,19 @@ struct OverlayCanvas
 
     static inline constexpr const float s_point_square_size = 0.01f; // relative to canvas size
     static inline constexpr const float s_min_point_square_size = 10.f; // min absolute pixels
+    static inline constexpr const float s_draw_shadow = false; // fixme
+    static inline constexpr const float s_draw_shadow_offset = 0.0015f; // fixme
 
     static float _half_point_size(ImVec2 canvas_size) noexcept
     {
         const float canvas_dim = quickgui::min(canvas_size.x, canvas_size.y);
         return 0.5f * quickgui::max(s_point_square_size * canvas_dim, s_min_point_square_size);
+    }
+
+    static ImVec2 _shadow_offset(ImVec2 canvas_size) noexcept
+    {
+        const float canvas_dim = quickgui::max(canvas_size.x, canvas_size.y);
+        return ImVec2{canvas_dim * s_draw_shadow_offset, canvas_dim * s_draw_shadow_offset};
     }
 
 };

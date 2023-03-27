@@ -8,6 +8,7 @@
 #include <c4/error.hpp>
 #include <c4/substr.hpp>
 #include "quickgui/imgui.hpp"
+#include "quickgui/color.hpp"
 
 namespace quickgui {
 
@@ -35,7 +36,7 @@ struct PrimitiveDrawList
             struct { uint32_t first_point, num_points; } poly;
             struct { ImVec2 center; float radius; } circle;
         };
-        uint32_t color;
+        ucolor color;
         float thickness;
         PrimitiveType_e type;
     };
@@ -70,7 +71,7 @@ public:
 
 public:
 
-    void draw_text(c4::csubstr txt, ImVec2 p, uint32_t color, float thickness) noexcept
+    void draw_text(c4::csubstr txt, ImVec2 p, ucolor color, float thickness) noexcept
     {
         const size_t first = m_characters.size();
         m_characters.resize(m_characters.size() + txt.size());
@@ -84,7 +85,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_point(ImVec2 p, uint32_t color, float thickness) noexcept
+    void draw_point(ImVec2 p, ucolor color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = point;
@@ -93,7 +94,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_line(ImVec2 p, ImVec2 q, uint32_t color, float thickness) noexcept
+    void draw_line(ImVec2 p, ImVec2 q, ucolor color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = line;
@@ -103,7 +104,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_rect(ImRect r, uint32_t color, float thickness) noexcept
+    void draw_rect(ImRect r, ucolor color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = rect;
@@ -112,7 +113,7 @@ public:
         prim.thickness = thickness;
     }
 
-    void draw_rect_filled(ImRect r, uint32_t color, float thickness) noexcept
+    void draw_rect_filled(ImRect r, ucolor color, float thickness) noexcept
     {
         auto &prim = m_primitives.emplace_back();
         prim.type = rect_filled;
@@ -122,7 +123,7 @@ public:
     }
 
     /** returns a buffer where the poly points can be written */
-    ImVec2* draw_poly(uint32_t num_points, uint32_t color, float thickness) noexcept
+    ImVec2* draw_poly(uint32_t num_points, ucolor color, float thickness) noexcept
     {
         const uint32_t first = (uint32_t)m_points.size();
         auto &prim = m_primitives.emplace_back();
@@ -135,7 +136,7 @@ public:
         return &m_points[first];
     }
 
-    void draw_circle(ImVec2 center, float radius, uint32_t color, float thickness) noexcept
+    void draw_circle(ImVec2 center, float radius, ucolor color, float thickness) noexcept
     {
         auto& prim = m_primitives.emplace_back();
         prim.type = circle;
