@@ -56,6 +56,7 @@ c4_add_library(quickgui
         src/quickgui/mem.hpp
         src/quickgui/overlay_canvas.cpp
         src/quickgui/overlay_canvas.hpp
+        src/quickgui/palettes.hpp
         src/quickgui/primitive_draw_list.hpp
         src/quickgui/primitive_draw_list_multithread.hpp
         src/quickgui/rhi.cpp
