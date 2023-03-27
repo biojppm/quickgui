@@ -2,18 +2,24 @@
 #define QUICKGUI_YUV_HPP_
 
 #include <quickgui/color.hpp>
-#include <quickgui/mem.hpp>
-#include <quickgui/math.hpp>
 
 namespace quickgui {
 
-/**
+/** https://en.wikipedia.org/wiki/YUV
  * @see to_yuv_sdtv
  * @see to_rgb_sdtv
  * @see to_yuv_hdtv
  * @see to_rgb_hdtv
  * */
-struct yuv { float y, u, v, a; };
+struct yuv
+{
+    yuv() noexcept = default;
+    constexpr explicit yuv(float y_, float u_, float v_, float a_) noexcept : y(y_), u(u_), v(v_), a(a_) {}
+    constexpr explicit yuv(float y_, float u_, float v_) noexcept : y(y_), u(u_), v(v_), a(1.f) {}
+    constexpr explicit yuv(uint8_t y_, uint8_t u_, uint8_t v_, uint8_t a_) noexcept : y(((float)y_) / 255.f), u(((float)u_) / 255.f), v(((float)v_) / 255.f), a(((float)a_) / 255.f) {}
+    constexpr explicit yuv(uint8_t y_, uint8_t u_, uint8_t v_) noexcept : y(((float)y_) / 255.f), u(((float)u_) / 255.f), v(((float)v_) / 255.f), a(1.f) {}
+    float y, u, v, a;
+};
 
 /** https://en.wikipedia.org/wiki/YUV */
 C4_CONST C4_ALWAYS_INLINE yuv to_yuv_sdtv(fcolor c) noexcept
