@@ -12,21 +12,6 @@ namespace quickgui {
 namespace widgets {
 
 
-struct FilePicker
-{
-    ImGuiFs::Dialog dialog = {};
-    /// @p file_filter can be something like ".png;.jpg;.jpeg;.bmp;.tga;.gif;.tiff;.txt". It's case insensitive.
-    const char *pick(const char* btn_txt="Select", const char *file_filter="", const char *window_title="Select")
-    {
-        bool open = ImGui::Button(btn_txt);
-        const char *path = dialog.chooseFileDialog(open, dialog.getLastDirectory(), file_filter, window_title);
-        if(dialog.hasUserJustCancelledDialog() || strlen(path) == 0)
-            return nullptr;
-        return path;
-    }
-};
-
-
 //-----------------------------------------------------------------------------
 
 inline void hspace(float px) { ImGui::Dummy(ImVec2(px, 0.f)); }
@@ -67,6 +52,35 @@ bool compact_color_picker(const char * title, ucolor *color, const char *tooltip
 bool compact_color_picker(const char * title, fcolor *color, const char *tooltip=nullptr);
 
 ImRect get_current_plot_rect();
+
+
+
+//-----------------------------------------------------------------------------
+
+struct FilePicker
+{
+    ImGuiFs::Dialog dialog = {};
+    /// @p file_filter can be something like ".png;.jpg;.jpeg;.bmp;.tga;.gif;.tiff;.txt". It's case insensitive.
+    const char *pick_file(const char* btn_txt="Select", const char *file_filter="", const char *window_title="Select")
+    {
+        bool open = ImGui::Button(btn_txt);
+        set_hover_tooltip("Click to select");
+        const char *path = dialog.chooseFileDialog(open, dialog.getLastDirectory(), file_filter, window_title);
+        if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
+            return nullptr;
+        return path;
+    }
+    /// @p file_filter can be something like ".png;.jpg;.jpeg;.bmp;.tga;.gif;.tiff;.txt". It's case insensitive.
+    const char *pick_dir(const char* btn_txt="Select")
+    {
+        bool open = ImGui::Button(btn_txt);
+        set_hover_tooltip("Click to select");
+        const char *path = dialog.chooseFolderDialog(open);
+        if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
+            return nullptr;
+        return path;
+    }
+};
 
 
 //-----------------------------------------------------------------------------
