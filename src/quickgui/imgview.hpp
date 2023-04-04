@@ -15,6 +15,7 @@ struct imgview
     typedef enum {
         data_u8 = 0, // space the values by 4 channels
         data_i8 = 4,
+        data_u16 = 0,
         data_u32 = 8,
         data_i32 = 12,
         data_f32 = 16,
@@ -30,6 +31,8 @@ struct imgview
         case data_u8:
         case data_i8:
             return 1u;
+        case data_u16:
+            return 2u;
         case data_u32:
         case data_i32:
         case data_f32:
@@ -80,6 +83,13 @@ public:
             && data_type == that.data_type;
     }
 
+    C4_ALWAYS_INLINE size_t pos(size_t w, size_t h) const noexcept
+    {
+        C4_ASSERT(w < width);
+        C4_ASSERT(h < height);
+        return (h * width + w);
+    }
+
     C4_ALWAYS_INLINE size_t pos(size_t w, size_t h, size_t ch) const noexcept
     {
         C4_ASSERT(w < width);
@@ -88,13 +98,32 @@ public:
         return ch + num_channels * (h * width + w);
     }
 
+    #define _imgviewcheck(T)\
+        C4_XASSERT(sizeof(T) == num_bytes_per_channel); \
+        C4_XASSERT(std::is_integral_v<T> == ((data_type == data_u8) || (data_type == data_i8) || (data_type == data_u16) || (data_type == data_u32) || (data_type == data_i32))); \
+        C4_XASSERT(std::is_signed_v<T> == ((data_type == data_i8) || (data_type == data_i32) || (data_type == data_f32))); \
+        C4_XASSERT(std::is_floating_point_v<T> == (data_type == data_f32)) \
+
+    template<class T>
+    T* get() noexcept
+    {
+        _imgviewcheck(T);
+        C4_XASSERT(buf != nullptr);
+        return reinterpret_cast<T const *>(buf);
+    }
+
+    template<class T>
+    T const* get() const noexcept
+    {
+        _imgviewcheck(T);
+        C4_XASSERT(buf != nullptr);
+        return reinterpret_cast<T const *>(buf);
+    }
+
     template<class T>
     T get(size_t w, size_t h, size_t ch) const noexcept
     {
-        C4_XASSERT(sizeof(T) == num_bytes_per_channel);
-        C4_XASSERT(std::is_integral_v<T> == ((data_type == data_u8) || (data_type == data_i8) || (data_type == data_u32) || (data_type == data_i32)));
-        C4_XASSERT(std::is_signed_v<T> == ((data_type == data_i8) || (data_type == data_i32) || (data_type == data_f32)));
-        C4_XASSERT(std::is_floating_point_v<T> == (data_type == data_f32));
+        _imgviewcheck(T);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(T) < buf_size);
@@ -104,12 +133,22 @@ public:
     }
 
     template<class T>
+    T get(size_t w, size_t h) const noexcept
+    {
+        _imgviewcheck(T);
+        C4_XASSERT(num_channels == 1u);
+        C4_XASSERT(buf != nullptr);
+        const size_t p = pos(w, h);
+        C4_XASSERT(p * sizeof(T) < buf_size);
+        C4_XASSERT(p < size);
+        T const *C4_RESTRICT const arr = reinterpret_cast<T const *>(buf);
+        return arr[p];
+    }
+
+    template<class T>
     void set(size_t w, size_t h, size_t ch, T chval) const noexcept
     {
-        C4_XASSERT(sizeof(T) == num_bytes_per_channel);
-        C4_XASSERT(std::is_integral_v<T> == ((data_type == data_u8) || (data_type == data_i8) || (data_type == data_u32) || (data_type == data_i32)));
-        C4_XASSERT(std::is_signed_v<T> == ((data_type == data_i8) || (data_type == data_i32) || (data_type == data_f32)));
-        C4_XASSERT(std::is_floating_point_v<T> == (data_type == data_f32));
+        _imgviewcheck(T);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(T) < buf_size);
@@ -118,6 +157,20 @@ public:
         arr[p] = chval;
     }
 
+    template<class T>
+    void set(size_t w, size_t h, T chval) const noexcept
+    {
+        _imgviewcheck(T);
+        C4_XASSERT(num_channels == 1u);
+        C4_XASSERT(buf != nullptr);
+        const size_t p = pos(w, h);
+        C4_XASSERT(p * sizeof(T) < buf_size);
+        C4_XASSERT(p < size);
+        T *C4_RESTRICT arr = reinterpret_cast<T *>(buf);
+        arr[p] = chval;
+    }
+
+    #undef _imgviewcheck
 };
 
 
@@ -129,6 +182,8 @@ imgview::data_type_e make_data_type()
         return imgview::data_u8;
     else if constexpr(std::is_same_v<T, int8_t>)
         return imgview::data_i8;
+    else if constexpr(std::is_same_v<T, uint16_t>)
+        return imgview::data_u16;
     if constexpr(std::is_same_v<T, uint32_t>)
         return imgview::data_u32;
     else if constexpr(std::is_same_v<T, int32_t>)
