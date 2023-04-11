@@ -8,34 +8,30 @@
 
 namespace quickgui {
 
-
-// data view for a tightly packed image
-struct imgview
+struct imgviewtype
 {
     typedef enum {
-        data_u8 = 0, // space the values by 4 channels
-        data_i8 = 4,
-        data_u16 = 0,
-        data_u32 = 8,
-        data_i32 = 12,
-        data_f32 = 16,
+        u8,
+        i8,
+        u16,
+        u32,
+        i32,
+        f32,
         // nothing else is supported
     } data_type_e;
 
-    size_t data_type_size() const noexcept { return data_type_size(data_type); }
-
-    static size_t data_type_size(data_type_e dt) noexcept
+    static size_t data_size(data_type_e dt) noexcept
     {
         switch(dt)
         {
-        case data_u8:
-        case data_i8:
+        case u8:
+        case i8:
             return 1u;
-        case data_u16:
+        case u16:
             return 2u;
-        case data_u32:
-        case data_i32:
-        case data_f32:
+        case u32:
+        case i32:
+        case f32:
             return 4u;
         default:
             break;
@@ -44,42 +40,74 @@ struct imgview
         return 0u;
     }
 
+    template<class T>
+    data_type_e from() noexcept
+    {
+        if constexpr(std::is_same_v<T, uint8_t>)
+            return u8;
+        else if constexpr(std::is_same_v<T, int8_t>)
+            return i8;
+        else if constexpr(std::is_same_v<T, uint16_t>)
+            return u16;
+        if constexpr(std::is_same_v<T, uint32_t>)
+            return u32;
+        else if constexpr(std::is_same_v<T, int32_t>)
+            return i32;
+        else if constexpr(std::is_same_v<T, float>)
+            return f32;
+        else
+            C4_STATIC_ERROR(T, "invalid type");
+        return u8;
+    }
+};
+
+
+// data view for a tightly packed image
+template<class T>
+struct basic_imgview
+{
+    using buffer_type = T;
+    using data_type_e = imgviewtype::data_type_e;
+
+    static_assert(sizeof(T) == 1u);
+
+    /// convert automatically to const view
+    inline operator basic_imgview<const T> const& () const noexcept { return *(basic_imgview<const T> const*)this; }
+
 public:
 
-    char * C4_RESTRICT buf = nullptr;
+    T* C4_RESTRICT buf = nullptr;
     size_t buf_size = 0;
 
     size_t width = 0;       // x, or number of columns
     size_t height = 0;      // y, or number of rows
-    size_t pixel_area = 0;  // width * height // TODO turn to function
     size_t num_channels = 0;
-    size_t num_bytes_per_channel = 0; // TODO turn to function
-    size_t size = 0;        // width * height * num_channels // TODO turn to function
-    size_t size_bytes = 0;  // width * height * num_channels * num_bytes_per_channel // TODO turn to function
-
-    data_type_e data_type = data_u32;
+    data_type_e data_type = imgviewtype::u8;
 
 public:
 
-    void reset(char *buf, size_t sz, size_t width, size_t height,
-               size_t num_channels, imgview::data_type_e data_type);
+    C4_ALWAYS_INLINE size_t pixel_area() const noexcept { return width * height; }
+    C4_ALWAYS_INLINE size_t num_values() const noexcept { return width * height * num_channels; }
+    C4_ALWAYS_INLINE size_t bytes_required() const noexcept { return imgviewtype::data_size(data_type) * width * height * num_channels; }
+    C4_ALWAYS_INLINE size_t data_type_size() const noexcept { return imgviewtype::data_size(data_type); }
+    C4_ALWAYS_INLINE size_t num_bytes_per_channel() const { return imgviewtype::data_size(data_type); }
 
-    void load_bmp(char *buf, size_t bufsz);
-    size_t save_bmp(char *buf, size_t bufsz);
+public:
+
+    void reset(T *buf, size_t sz, size_t width, size_t height,
+               size_t num_channels, data_type_e data_type);
 
 public:
 
     operator bool() const noexcept { return buf != nullptr; }
-    bool is_same(imgview const& that) const noexcept
+
+    template<class U>
+    bool is_same(basic_imgview<U> const& that) const noexcept
     {
         return buf == that.buf
             && width == that.width
             && height == that.height
-            && pixel_area == that.pixel_area
             && num_channels == that.num_channels
-            && num_bytes_per_channel == that.num_bytes_per_channel
-            && size == that.size
-            && size_bytes == that.size_bytes
             && data_type == that.data_type;
     }
 
@@ -87,6 +115,7 @@ public:
     {
         C4_ASSERT(w < width);
         C4_ASSERT(h < height);
+        C4_ASSERT(num_channels == 1u);
         return (h * width + w);
     }
 
@@ -99,74 +128,71 @@ public:
     }
 
     #define _imgviewcheck(T)\
-        C4_XASSERT(sizeof(T) == num_bytes_per_channel); \
-        C4_XASSERT(std::is_integral_v<T> == ((data_type == data_u8) || (data_type == data_i8) || (data_type == data_u16) || (data_type == data_u32) || (data_type == data_i32))); \
-        C4_XASSERT(std::is_signed_v<T> == ((data_type == data_i8) || (data_type == data_i32) || (data_type == data_f32))); \
-        C4_XASSERT(std::is_floating_point_v<T> == (data_type == data_f32)) \
+        using vty = imgviewtype;                        \
+        C4_XASSERT(sizeof(T) == num_bytes_per_channel()); \
+        C4_XASSERT(std::is_integral_v<T> == ((data_type == vty::u8) || (data_type == vty::i8) || (data_type == vty::u16) || (data_type == vty::u32) || (data_type == vty::i32))); \
+        C4_XASSERT(std::is_signed_v<T> == ((data_type == vty::i8) || (data_type == vty::i32) || (data_type == vty::f32))); \
+        C4_XASSERT(std::is_floating_point_v<T> == (data_type == vty::f32)) \
 
-    template<class T>
-    T* get() noexcept
+    template<class U>
+    auto data_as() const noexcept
+        -> std::conditional_t<std::is_const_v<T>, U const*, U*>
     {
-        _imgviewcheck(T);
+        _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
-        return reinterpret_cast<T const *>(buf);
+        using rettype = std::conditional_t<std::is_const_v<T>, U const, U>;
+        return reinterpret_cast<rettype*>(buf);
     }
 
-    template<class T>
-    T const* get() const noexcept
+    template<class U>
+    U get(size_t w, size_t h, size_t ch) const noexcept
     {
-        _imgviewcheck(T);
-        C4_XASSERT(buf != nullptr);
-        return reinterpret_cast<T const *>(buf);
-    }
-
-    template<class T>
-    T get(size_t w, size_t h, size_t ch) const noexcept
-    {
-        _imgviewcheck(T);
+        _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h, ch);
-        C4_XASSERT(p * sizeof(T) < buf_size);
-        C4_XASSERT(p < size);
-        T const *C4_RESTRICT const arr = reinterpret_cast<T const *>(buf);
+        C4_XASSERT(p * sizeof(U) < buf_size);
+        C4_XASSERT(p < num_values());
+        U const *C4_RESTRICT const arr = reinterpret_cast<U const *>(buf);
         return arr[p];
     }
 
-    template<class T>
-    T get(size_t w, size_t h) const noexcept
+    template<class U>
+    U get(size_t w, size_t h) const noexcept
     {
-        _imgviewcheck(T);
+        _imgviewcheck(U);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h);
-        C4_XASSERT(p * sizeof(T) < buf_size);
-        C4_XASSERT(p < size);
-        T const *C4_RESTRICT const arr = reinterpret_cast<T const *>(buf);
+        C4_XASSERT(p * sizeof(U) < buf_size);
+        C4_XASSERT(p < num_values());
+        U const *C4_RESTRICT const arr = reinterpret_cast<U const *>(buf);
         return arr[p];
     }
 
-    template<class T>
-    void set(size_t w, size_t h, size_t ch, T chval) const noexcept
+    template<class U, class V=T>
+    auto set(size_t w, size_t h, size_t ch, T chval) const noexcept
+        -> std::enable_if_t<!std::is_const_v<V>, void>
     {
-        _imgviewcheck(T);
+        _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h, ch);
-        C4_XASSERT(p * sizeof(T) < buf_size);
-        C4_XASSERT(p < size);
-        T *C4_RESTRICT arr = reinterpret_cast<T *>(buf);
+        C4_XASSERT(p * sizeof(U) < buf_size);
+        C4_XASSERT(p < num_values());
+        U *C4_RESTRICT arr = reinterpret_cast<U *>(buf);
         arr[p] = chval;
     }
 
-    template<class T>
-    void set(size_t w, size_t h, T chval) const noexcept
+    template<class U, class V=T>
+    auto set(size_t w, size_t h, U chval) const noexcept
+        -> std::enable_if_t<!std::is_const_v<V>, void>
     {
         _imgviewcheck(T);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
         const size_t p = pos(w, h);
         C4_XASSERT(p * sizeof(T) < buf_size);
-        C4_XASSERT(p < size);
-        T *C4_RESTRICT arr = reinterpret_cast<T *>(buf);
+        C4_XASSERT(p < num_values());
+        U *C4_RESTRICT arr = reinterpret_cast<U *>(buf);
         arr[p] = chval;
     }
 
@@ -174,65 +200,19 @@ public:
 };
 
 
-C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4702)  // unreachable code
-template<class T>
-imgview::data_type_e make_data_type()
-{
-    if constexpr(std::is_same_v<T, uint8_t>)
-        return imgview::data_u8;
-    else if constexpr(std::is_same_v<T, int8_t>)
-        return imgview::data_i8;
-    else if constexpr(std::is_same_v<T, uint16_t>)
-        return imgview::data_u16;
-    if constexpr(std::is_same_v<T, uint32_t>)
-        return imgview::data_u32;
-    else if constexpr(std::is_same_v<T, int32_t>)
-        return imgview::data_i32;
-    else if constexpr(std::is_same_v<T, float>)
-        return imgview::data_f32;
-    C4_NOT_IMPLEMENTED();
-    C4_UNREACHABLE();
-    return imgview::data_u32;
-}
-C4_SUPPRESS_WARNING_MSVC_POP
+using wimgview = basic_imgview<uint8_t>;
+using imgview = basic_imgview<const uint8_t>;
 
+imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
+                      size_t num_channels, imgview::data_type_e data_type);
+wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
+                      size_t num_channels, imgview::data_type_e data_type);
 
-imgview make_view(char *buf, size_t sz, size_t width, size_t height,
-                  size_t num_channels, imgview::data_type_e data_type);
+wimgview load_bmp(void *buf, size_t bufsz);
+size_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, size_t bmp_buf_sz);
 
-
-imgview load_bmp(char *buf, size_t bufsz);
-
-
-namespace detail {
-/* example:
-imgview load(const char *filename, char *buf, size_t bufsz);
-
-template<class LinearContainerOfChar>
-imgview load(const char *filename, LinearContainerOfChar *cont)
-{
-    return detail::_resize_container_and_create_imgview(cont, [&](char *dat, size_t sz){
-        return load(filename, dat, sz);
-    });
-}
-*/
-template<class LinearContainerOfChar, class Function>
-imgview _resize_container_and_create_imgview(LinearContainerOfChar *cont, Function &&fn)
-{
-    imgview view = cont->empty() ? fn(nullptr, 0) : fn(cont->data(), cont->size());
-    cont->resize(view.size_bytes);
-    if(!view)
-    {
-       view = fn(cont->data(), cont->size());
-       cont->resize(view.size_bytes);
-    }
-    return view;
-}
-} // namespace detail
-
-
-void vflip(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept;
-void convert_channels(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept;
+void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 
 } // namespace quickgui
 

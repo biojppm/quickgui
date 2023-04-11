@@ -43,9 +43,9 @@ struct BMPInfoHeader
 
 struct BMPColorHeader
 {
-    uint32_t red_mask{0x00ff0000};         // Bit mask for the red channel
+    uint32_t red_mask  {0x00ff0000};       // Bit mask for the red channel
     uint32_t green_mask{0x0000ff00};       // Bit mask for the green channel
-    uint32_t blue_mask{0x000000ff};        // Bit mask for the blue channel
+    uint32_t blue_mask {0x000000ff};       // Bit mask for the blue channel
     uint32_t alpha_mask{0xff000000};       // Bit mask for the alpha channel
     uint32_t color_space_type{0x73524742}; // Default "sRGB" (0x73524742)
     uint32_t unused[16]{0};                // Unused data for sRGB color space
@@ -54,8 +54,9 @@ struct BMPColorHeader
 } // anon namespace
 
 
-void imgview::load_bmp(char * bmp_buf, size_t bmp_buf_sz)
+wimgview load_bmp(void * bmp_buf_, size_t bmp_buf_sz)
 {
+    char *C4_RESTRICT bmp_buf = (char *)bmp_buf_;
     BMPFileHeader const* C4_RESTRICT file_header = (BMPFileHeader const*)(bmp_buf);
     C4_CHECK(file_header->file_type == 0x4d42);
     C4_CHECK(file_header->file_size <= (uint32_t)bmp_buf_sz);
@@ -73,23 +74,20 @@ void imgview::load_bmp(char * bmp_buf, size_t bmp_buf_sz)
         (void)color_header;
     }
     C4_CHECK(info_header->height > 0);
-    buf = bmp_buf + file_header->offset_data;
-    buf_size = bmp_buf_sz - file_header->offset_data;
-    width = (uint32_t)info_header->width;
-    height = (uint32_t)info_header->height;
-    pixel_area = width * height;
-    num_channels = info_header->bit_count / 8;
-    num_bytes_per_channel = 1;
-    size = pixel_area * num_channels;
-    size_bytes = size * num_bytes_per_channel;
-    data_type = imgview::data_u8;
-    C4_CHECK(size_bytes == width * height * num_channels);
-    C4_CHECK(size_bytes <= buf_size);
+    wimgview v = make_wimgview(
+        /*buf*/bmp_buf + file_header->offset_data,
+        /*bufsz*/bmp_buf_sz - file_header->offset_data,
+        /*width*/(size_t)info_header->width,
+        /*height*/(size_t)info_header->height,
+        /*num_channels*/info_header->bit_count / 8u,
+        /*data_type*/imgviewtype::u8);
     // remove any padding at the end of the rows
-    C4_ASSERT((width & 3) == 0);
+    C4_ASSERT((v.width & 3) == 0);
+    return v;
 }
 
-size_t imgview::save_bmp(char *bmp_buf, size_t bmp_buf_sz)
+
+size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
 {
     size_t bmp_buf_pos = 0;
     auto _nextfield = [&](size_t sz){
@@ -100,7 +98,7 @@ size_t imgview::save_bmp(char *bmp_buf, size_t bmp_buf_sz)
     BMPFileHeader *file_header = nullptr;
     BMPInfoHeader *info_header = nullptr;
     BMPColorHeader *color_header = nullptr;
-    uint16_t bit_count = (uint16_t)(num_channels * num_bytes_per_channel * size_t(8));
+    uint16_t bit_count = (uint16_t)(v.num_channels * v.num_bytes_per_channel() * size_t(8));
     if(char *field = _nextfield(sizeof(BMPFileHeader)); field)
     {
         file_header = (BMPFileHeader*)field;
@@ -112,10 +110,10 @@ size_t imgview::save_bmp(char *bmp_buf, size_t bmp_buf_sz)
         info_header = (BMPInfoHeader*)field;
         *info_header = BMPInfoHeader{};
         info_header->size = (uint32_t)sizeof(BMPInfoHeader);
-        info_header->width = (int32_t)width;
-        info_header->height = (int32_t)height;
+        info_header->width = (int32_t)v.width;
+        info_header->height = (int32_t)v.height;
         info_header->bit_count = bit_count;
-        info_header->size_image = (uint32_t)size_bytes;
+        info_header->size_image = (uint32_t)v.bytes_required();
     }
     if(bit_count == 32)
     {
@@ -143,39 +141,36 @@ size_t imgview::save_bmp(char *bmp_buf, size_t bmp_buf_sz)
         C4_ASSERT(pos == skip_bytes);
     }
     uint32_t offset_data = (uint32_t)bmp_buf_pos;
-    if(char *field = _nextfield(this->size_bytes); field)
+    size_t num_bytes = v.bytes_required();
+    C4_ASSERT(num_bytes <= v.buf_size);
+    if(char *field = _nextfield(num_bytes); field)
     {
-        C4_ASSERT(this->size_bytes <= this->buf_size);
-        if(field != this->buf)
+        if(field != (void*)v.buf)
         {
-            C4_ASSERT(!c4::mem_overlaps(field, this->buf, this->size_bytes, this->size_bytes));
-            memcpy(field, this->buf, this->size_bytes);
+            C4_ASSERT(!c4::mem_overlaps(field, v.buf, num_bytes, num_bytes));
+            memcpy(field, v.buf, num_bytes);
         }
     }
     if(file_header)
     {
         file_header->offset_data = offset_data;
-        file_header->file_size = offset_data + (uint32_t)this->size_bytes;
+        file_header->file_size = offset_data + (uint32_t)num_bytes;
     }
     return bmp_buf_pos;
 }
 
 
-void imgview::reset(char *ibuf, size_t sz, size_t width_, size_t height_,
-                    size_t num_channels_, imgview::data_type_e dt)
+template<class T>
+void basic_imgview<T>::reset(T *ibuf, size_t sz, size_t width_, size_t height_,
+                             size_t num_channels_, imgview::data_type_e dt)
 {
-    C4_CHECK(dt == data_u8 || dt == data_i8 || dt == data_u32 || dt == data_i32 || dt == data_f32);
     buf = ibuf;
     buf_size = sz;
     width = width_;
     height = height_;
-    pixel_area = width * height;
     num_channels = num_channels_;
-    num_bytes_per_channel = data_type_size(dt);
-    size = pixel_area * num_channels;
-    size_bytes = size * num_bytes_per_channel;
     data_type = dt;
-    if(size_bytes > buf_size)
+    if(bytes_required() > buf_size)
     {
         buf = nullptr;
         buf_size = 0;
@@ -183,32 +178,30 @@ void imgview::reset(char *ibuf, size_t sz, size_t width_, size_t height_,
 }
 
 
-imgview load_bmp(char *buf, size_t sz)
+wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
+                       size_t num_channels, imgview::data_type_e dt)
+{
+    wimgview v;
+    v.reset((wimgview::buffer_type*)buf, sz, width, height, num_channels, dt);
+    return v;
+}
+imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
+                     size_t num_channels, imgview::data_type_e dt)
 {
     imgview v;
-    v.load_bmp(buf, sz);
+    v.reset((imgview::buffer_type*)buf, sz, width, height, num_channels, dt);
     return v;
 }
 
-
-imgview make_view(char *buf, size_t sz, size_t width, size_t height,
-                  size_t num_channels, imgview::data_type_e dt)
+void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
 {
-    imgview v;
-    v.reset(buf, sz, width, height, num_channels, dt);
-    return v;
-}
-
-void vflip(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept
-{
-    C4_ASSERT(src.data_type == imgview::data_u8);
-    C4_ASSERT(dst.data_type == imgview::data_u8);
-    C4_ASSERT(src.buf != dst.buf);
-    C4_ASSERT(src.width == dst.width);
-    C4_ASSERT(src.height == dst.height);
-    C4_ASSERT(src.pixel_area == dst.pixel_area);
-    C4_ASSERT(src.num_channels == dst.num_channels);
-    C4_ASSERT(!c4::mem_overlaps(src.buf, dst.buf, src.size_bytes, dst.size_bytes));
+    C4_CHECK(src.data_type == imgviewtype::u8);
+    C4_CHECK(dst.data_type == imgviewtype::u8);
+    C4_CHECK(src.buf != dst.buf);
+    C4_CHECK(src.width == dst.width);
+    C4_CHECK(src.height == dst.height);
+    C4_CHECK(src.num_channels == dst.num_channels);
+    C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     using T = int8_t;
     using I = int32_t; // using signed indices for faster iteration
     const I H = (I)src.height;
@@ -226,15 +219,13 @@ void vflip(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept
 
 void convert_channels(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept
 {
-    C4_ASSERT(src.data_type == imgview::data_u8);
-    C4_ASSERT(dst.data_type == imgview::data_u8);
-    C4_ASSERT(src.buf != dst.buf);
-    C4_ASSERT(src.width == dst.width);
-    C4_ASSERT(src.height == dst.height);
-    C4_ASSERT(src.pixel_area == dst.pixel_area);
-    C4_ASSERT(src.buf_size / src.num_channels == dst.buf_size / dst.num_channels);
-    C4_ASSERT(src.size_bytes / src.num_channels == dst.size_bytes / dst.num_channels);
-    C4_ASSERT(!c4::mem_overlaps(src.buf, dst.buf, src.size_bytes, dst.size_bytes));
+    C4_CHECK(src.data_type == imgviewtype::u8);
+    C4_CHECK(dst.data_type == imgviewtype::u8);
+    C4_CHECK(src.buf != dst.buf);
+    C4_CHECK(src.width == dst.width);
+    C4_CHECK(src.height == dst.height);
+    C4_CHECK(src.buf_size / src.num_channels == dst.buf_size / dst.num_channels);
+    C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     using T = int8_t;
     using I = int32_t; // using signed indices for faster iteration
     const I H = (I)src.height;

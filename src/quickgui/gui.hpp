@@ -3,6 +3,7 @@
 
 #include "quickgui/rhi.hpp"
 #include "quickgui/imgui.hpp"
+#include "quickgui/imgview.hpp"
 
 // this fwd-declaration is required
 typedef union SDL_Event SDL_Event;
@@ -84,8 +85,7 @@ struct stb_image_data;
 VkFormat stb_format(stb_image_data const& s);
 quickgui::rhi::ImageLayout stb_layout(stb_image_data const& s);
 
-struct imgview;
-VkFormat imgview_format(int imgview_data_type_e, size_t num_channels);
+VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels);
 VkFormat imgview_format(imgview const& s);
 quickgui::rhi::ImageLayout imgview_layout(imgview const& s);
 

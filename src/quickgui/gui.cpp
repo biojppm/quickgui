@@ -96,8 +96,9 @@ VkFormat imgview_format(imgview const& iv)
 {
     return imgview_format(iv.data_type, iv.num_channels);
 }
-VkFormat imgview_format(int imgview_data_type_e, size_t num_channels)
+VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels)
 {
+    C4_ASSERT(num_channels > 0);
     static constexpr const VkFormat formats[] = {
         // u8
         VK_FORMAT_R8_UNORM,
@@ -109,6 +110,11 @@ VkFormat imgview_format(int imgview_data_type_e, size_t num_channels)
         VK_FORMAT_R8G8_SNORM,
         VK_FORMAT_R8G8B8_SNORM,
         VK_FORMAT_R8G8B8A8_SNORM,
+        // u16
+        VK_FORMAT_R16_UNORM,
+        VK_FORMAT_R16G16_UNORM,
+        VK_FORMAT_R16G16B16_UNORM,
+        VK_FORMAT_R16G16B16A16_UNORM,
         // u32
         VK_FORMAT_R32_UINT,
         VK_FORMAT_R32G32_UINT,
@@ -125,13 +131,14 @@ VkFormat imgview_format(int imgview_data_type_e, size_t num_channels)
         VK_FORMAT_R32G32B32_SFLOAT,
         VK_FORMAT_R32G32B32A32_SFLOAT,
     };
-    static_assert(imgview::data_u8 == 0);
-    static_assert(imgview::data_i8 == 4);
-    static_assert(imgview::data_u32 == 8);
-    static_assert(imgview::data_i32 == 12);
-    static_assert(imgview::data_f32 == 16);
-    static_assert(C4_COUNTOF(formats) >= 20);
-    return formats[imgview_data_type_e + (int)num_channels];
+    static_assert(imgviewtype::u8 == 0);
+    static_assert(imgviewtype::i8 == 1);
+    static_assert(imgviewtype::u16 == 2);
+    static_assert(imgviewtype::u32 == 3);
+    static_assert(imgviewtype::i32 == 4);
+    static_assert(imgviewtype::f32 == 5);
+    static_assert(C4_COUNTOF(formats) >= 24);
+    return formats[4 * type + (int)num_channels - 1];
 }
 
 quickgui::rhi::ImageLayout imgview_layout(imgview const& s)
