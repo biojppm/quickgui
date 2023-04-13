@@ -425,7 +425,7 @@ void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
 
 void FramePresent(ImGui_ImplVulkanH_Window* wd)
 {
-    if (g_SwapChainRebuild)
+    if(g_SwapChainRebuild)
         return;
     VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
     VkPresentInfoKHR info = {};
@@ -443,6 +443,8 @@ void FramePresent(ImGui_ImplVulkanH_Window* wd)
     }
     C4_CHECK_VK(err);
     wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->ImageCount; // Now we can use the next set of semaphores
+    if(quickgui::rhi::g_rhi.m_upload_buffer_in_use)
+        quickgui::rhi::g_rhi.m_upload_buffer_in_use = false;
 }
 
 
@@ -917,13 +919,14 @@ Rhi::Rhi(VkDevice device, VkPhysicalDevice phys_device, VkAllocationCallbacks co
     : m_device(device)
     , m_phys_device(phys_device)
     , m_allocator(allocator)
-    , m_upload_buffer()
     , m_fences()
     , m_image_views()
     , m_samplers()
     , m_images()
     , m_buffers()
     , m_non_coherent_atom_size(64)
+    , m_upload_buffer()
+    , m_upload_buffer_in_use(false)
 {
     if(m_phys_device != VK_NULL_HANDLE)
     {
@@ -935,8 +938,8 @@ Rhi::Rhi(VkDevice device, VkPhysicalDevice phys_device, VkAllocationCallbacks co
 
 Rhi::~Rhi()
 {
-    auto v = m_device;
-    auto a = m_allocator;
+    VkDevice v = m_device;
+    VkAllocationCallbacks const* a = m_allocator;
     m_buffers.destroy_all(v, a);
     m_images.destroy_all(v, a);
     m_samplers.destroy_all(v, a);
@@ -961,7 +964,7 @@ size_t Rhi::required_buffer_size(size_t wanted) const
     C4_ASSERT(m_non_coherent_atom_size > 0);
     const size_t result = next_multiple(wanted, m_non_coherent_atom_size);
     C4_ASSERT(result >= wanted);
-    C4_ASSERT(result % m_non_coherent_atom_size == size_t(0));
+    C4_ASSERT((result % m_non_coherent_atom_size) == size_t(0));
     return result;
 }
 
@@ -971,7 +974,7 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
     C4_ASSERT(data.size() == layout.num_bytes());
     // ensure the staging upload buffer has enough room
     size_t num_bytes = layout.num_bytes();
-    size_t buf_size = resize_upload_buffer(num_bytes);
+    size_t buf_size = use_upload_buffer_with(num_bytes);
     // copy to the staging upload buffer
     VkDeviceSize upload_size = c4::szconv<VkDeviceSize>(buf_size);
     void* map = nullptr;
@@ -1010,8 +1013,10 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
     vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
-size_t Rhi::resize_upload_buffer(size_t wanted_upload_size)
+size_t Rhi::use_upload_buffer_with(size_t wanted_upload_size)
 {
+    C4_CHECK(!m_upload_buffer_in_use);
+    m_upload_buffer_in_use = true;
     size_t actual_size = required_buffer_size(wanted_upload_size);
     C4_ASSERT(actual_size >= wanted_upload_size);
     if(actual_size < m_upload_buffer.size)

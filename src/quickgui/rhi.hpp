@@ -354,7 +354,6 @@ struct Rhi
     VkDevice                      m_device;
     VkPhysicalDevice              m_phys_device;
     VkAllocationCallbacks const  *m_allocator;
-    Buffer                        m_upload_buffer; // should we put this into the buffer collection?
     FenceCollection               m_fences;
     ImageViewCollection           m_image_views;
     SamplerCollection             m_samplers;
@@ -362,12 +361,15 @@ struct Rhi
     BufferCollection              m_buffers;
     size_t                        m_non_coherent_atom_size;
 
+    Buffer                        m_upload_buffer; // should we put this into the buffer collection?
+    bool                          m_upload_buffer_in_use;
+
     Rhi();
     Rhi(VkDevice device, VkPhysicalDevice phys_device, VkAllocationCallbacks const* allocator);
     ~Rhi();
 
     size_t required_buffer_size(size_t wanted) const;
-    size_t resize_upload_buffer(size_t upload_size);
+    size_t use_upload_buffer_with(size_t upload_size);
 
     // fences
     [[nodiscard]] fence_id make_fence(VkFenceCreateInfo const& info) { return m_fences.reset({}, info, m_device, m_allocator); }
