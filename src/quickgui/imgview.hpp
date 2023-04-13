@@ -41,7 +41,7 @@ struct imgviewtype
     }
 
     template<class T>
-    data_type_e from() noexcept
+    static data_type_e from() noexcept
     {
         if constexpr(std::is_same_v<T, uint8_t>)
             return u8;
@@ -111,6 +111,17 @@ public:
             && data_type == that.data_type;
     }
 
+    template<class U>
+    bool has_same_params(basic_imgview<U> const& that) const noexcept
+    {
+        return width == that.width
+            && height == that.height
+            && num_channels == that.num_channels
+            && data_type == that.data_type;
+    }
+
+public:
+
     C4_ALWAYS_INLINE size_t pos(size_t w, size_t h) const noexcept
     {
         C4_ASSERT(w < width);
@@ -141,6 +152,18 @@ public:
         _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
         using rettype = std::conditional_t<std::is_const_v<T>, U const, U>;
+        return reinterpret_cast<rettype*>(buf);
+    }
+
+    template<class C>
+    auto color_data_as() const noexcept
+        -> std::conditional_t<std::is_const_v<T>, C const*, C*>
+    {
+        C4_ASSERT(sizeof(C) == num_channels * num_bytes_per_channel());
+        using U = typename C::value_type;
+        _imgviewcheck(U);
+        C4_XASSERT(buf != nullptr);
+        using rettype = std::conditional_t<std::is_const_v<T>, C const, C>;
         return reinterpret_cast<rettype*>(buf);
     }
 
@@ -202,6 +225,9 @@ public:
 
 using wimgview = basic_imgview<uint8_t>;
 using imgview = basic_imgview<const uint8_t>;
+
+imgview make_imgview(void const* buf, size_t sz, imgview const& blueprint);
+wimgview make_wimgview(void *buf, size_t sz, imgview const& blueprint);
 
 imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
                       size_t num_channels, imgview::data_type_e data_type);

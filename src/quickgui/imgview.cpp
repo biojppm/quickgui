@@ -178,6 +178,20 @@ void basic_imgview<T>::reset(T *ibuf, size_t sz, size_t width_, size_t height_,
 }
 
 
+imgview make_imgview(void const* buf, size_t sz, imgview const& blueprint)
+{
+    imgview v;
+    v.reset((imgview::buffer_type*)buf, sz, blueprint.width, blueprint.height, blueprint.num_channels, blueprint.data_type);
+    return v;
+}
+
+wimgview make_wimgview(void *buf, size_t sz, imgview const& blueprint)
+{
+    wimgview v;
+    v.reset((wimgview::buffer_type*)buf, sz, blueprint.width, blueprint.height, blueprint.num_channels, blueprint.data_type);
+    return v;
+}
+
 wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
                        size_t num_channels, imgview::data_type_e dt)
 {
