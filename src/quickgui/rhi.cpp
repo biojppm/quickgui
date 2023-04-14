@@ -910,6 +910,59 @@ void SamplerCollection::destroy_all(VkDevice v, VkAllocationCallbacks const* a)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+void UploadBuffer::destroy(Rhi &rhi)
+{
+    m_buf.destroy(rhi.m_device, rhi.m_allocator);
+    m_pos = 0;
+}
+
+VkDeviceSize UploadBuffer::require(Rhi &rhi, VkDeviceSize num_bytes)
+{
+    VkDeviceSize actual_size = rhi.required_buffer_size(num_bytes);
+    C4_ASSERT(actual_size >= num_bytes);
+    m_pos = 0;
+    if(actual_size > m_buf.size)
+    {
+        // free the existing buffer before allocating with the new size
+        m_buf.destroy(rhi.m_device, rhi.m_allocator);
+        // create the buffer with the required size
+        VkBufferCreateInfo nfo = {};
+        nfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        nfo.size = actual_size;
+        nfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        nfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        m_buf.create(nfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, rhi.m_device, rhi.m_allocator);
+        debug_marker_set_name(rhi.m_device, m_buf.mem, "rhi_upload_buffer_memory");
+        debug_marker_set_name(rhi.m_device, m_buf.handle, "rhi_upload_buffer");
+        return m_buf.size;
+    }
+    return actual_size;
+}
+
+VkDeviceSize UploadBuffer::add(Rhi &rhi, void const *mem, VkDeviceSize sz)
+{
+    C4_CHECK(m_pos + sz <= m_buf.size);
+    VkDeviceSize offset = m_pos;
+    void* map = nullptr;
+    C4_CHECK_VK(vkMapMemory(rhi.m_device, m_buf.mem, offset, sz, /*flags*/0, &map));
+    memcpy(map, mem, sz);
+    VkMappedMemoryRange range[1] = {};
+    range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range[0].memory = m_buf.mem;
+    range[0].offset = m_pos;
+    range[0].size = sz;
+    C4_CHECK_VK(vkFlushMappedMemoryRanges(rhi.m_device, 1, range));
+    vkUnmapMemory(rhi.m_device, m_buf.mem);
+    // update the offset
+    m_pos += sz;
+    return offset;
+}
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 // piggyback on the quick'n'dirty imgui implementation
 Rhi::Rhi() : Rhi(g_Device, g_PhysicalDevice, g_Allocator)
 {
@@ -945,7 +998,7 @@ Rhi::~Rhi()
     m_samplers.destroy_all(v, a);
     m_image_views.destroy_all(v, a);
     m_fences.destroy_all(v, a);
-    m_upload_buffer.destroy(v, a);
+    m_upload_buffer.destroy(*this);
 }
 
 VkCommandBuffer Rhi::usr_cmd_buffer()
@@ -968,31 +1021,39 @@ size_t Rhi::required_buffer_size(size_t wanted) const
     return result;
 }
 
+size_t Rhi::use_upload_buffer_with(size_t wanted_upload_size)
+{
+    C4_CHECK(!m_upload_buffer_in_use);
+    m_upload_buffer_in_use = true;
+    return m_upload_buffer.require(*this, wanted_upload_size);
+}
+
 void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, VkCommandBuffer cmdbuf)
 {
-    auto &img = get_image(id);
-    C4_ASSERT(data.size() == layout.num_bytes());
     // ensure the staging upload buffer has enough room
     size_t num_bytes = layout.num_bytes();
     size_t buf_size = use_upload_buffer_with(num_bytes);
     // copy to the staging upload buffer
-    VkDeviceSize upload_size = c4::szconv<VkDeviceSize>(buf_size);
-    void* map = nullptr;
-    C4_CHECK_VK(vkMapMemory(m_device, m_upload_buffer.mem, 0, upload_size, 0, &map));
-    memcpy(map, data.data(), data.size());
-    VkMappedMemoryRange range[1] = {};
-    range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    range[0].memory = m_upload_buffer.mem;
-    range[0].size = upload_size;
-    C4_CHECK_VK(vkFlushMappedMemoryRanges(m_device, 1, range));
-    vkUnmapMemory(m_device, m_upload_buffer.mem);
+    VkDeviceSize offset = m_upload_buffer.add(*this, data.data(), data.size()); // this ensures adequate room
+    // now upload
+    upload_image(id, layout, data, cmdbuf, &m_upload_buffer, offset);
+}
+
+void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, VkCommandBuffer cmdbuf, UploadBuffer *upload_buffer, VkDeviceSize upload_buffer_offset)
+{
+    auto &img = get_image(id);
+    C4_ASSERT(data.size() == layout.num_bytes());
     // copy the staging buffer to the image, ensuring synchronization
     VkBufferImageCopy region = {};
+    // see https://stackoverflow.com/questions/46501832/vulkan-vkbufferimagecopy-for-partial-transfer
+    region.bufferOffset = upload_buffer_offset;
+    region.bufferRowLength = layout.width;
+    region.bufferImageHeight = layout.height;
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.layerCount = 1; // FIXME
-    region.imageExtent.width = c4::szconv<uint32_t>(img.layout.width);
-    region.imageExtent.height = c4::szconv<uint32_t>(img.layout.height);
-    region.imageExtent.depth = c4::szconv<uint32_t>(img.layout.depth);
+    region.imageExtent.width = img.layout.width;
+    region.imageExtent.height = img.layout.height;
+    region.imageExtent.depth = img.layout.depth;
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -1005,34 +1066,12 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
     barrier.subresourceRange.levelCount = 1; // FIXME
     barrier.subresourceRange.layerCount = 1; // FIXME
     vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-    vkCmdCopyBufferToImage(cmdbuf, m_upload_buffer.handle, img.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(cmdbuf, upload_buffer->m_buf, img.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-}
-
-size_t Rhi::use_upload_buffer_with(size_t wanted_upload_size)
-{
-    C4_CHECK(!m_upload_buffer_in_use);
-    m_upload_buffer_in_use = true;
-    size_t actual_size = required_buffer_size(wanted_upload_size);
-    C4_ASSERT(actual_size >= wanted_upload_size);
-    if(actual_size < m_upload_buffer.size)
-        return actual_size;
-    // free the existing buffer before allocating with the new size
-    m_upload_buffer.destroy(m_device, m_allocator);
-    // create the buffer with the required size
-    VkBufferCreateInfo nfo = {};
-    nfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    nfo.size = actual_size;
-    nfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    nfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    m_upload_buffer.create(nfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, m_device, m_allocator);
-    debug_marker_set_name(m_device, m_upload_buffer.mem, "rhi_upload_buffer_memory");
-    debug_marker_set_name(m_device, m_upload_buffer.handle, "rhi_upload_buffer");
-    return actual_size;
 }
 
 

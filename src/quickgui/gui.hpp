@@ -49,10 +49,14 @@ struct GuiImage
     ImVec4             border_color = {0.f, 0.f, 0.f, 0.f};
     void load_existing(rhi::image_id id);
     void load_existing(rhi::image_id id, rhi::sampler_id sampler);
-    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout);
-    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
     void load(const char *filename);
+    void load(const char *filename, rhi::UploadBuffer *upload_buffer);
     void load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
+    void load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::UploadBuffer *upload_buffer);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
+    void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer);
     void destroy();
     rhi::ImageLayout const& layout() const { return rhi::g_rhi.get_image(img_id).layout; }
     void display(float scale=1.f) const;
@@ -89,9 +93,13 @@ VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels);
 VkFormat imgview_format(imgview const& s);
 quickgui::rhi::ImageLayout imgview_layout(imgview const& s);
 
+rhi::image_id load_image_2d_rgba(const char *filename, quickgui::rhi::ImageLayout const& layout, rhi::Rhi *rhi, VkCommandBuffer cmdbuf, rhi::UploadBuffer *upload_buffer);
 rhi::image_id load_image_2d_rgba(const char *filename, quickgui::rhi::ImageLayout const& layout, rhi::Rhi *rhi, VkCommandBuffer cmdbuf);
+rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const&, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer);
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const&, rhi::Rhi *r, VkCommandBuffer cmd);
+rhi::image_id load_image_2d_rgba(const char *filename, rhi::Rhi *rhi, VkCommandBuffer cmdbuf, rhi::UploadBuffer *upload_buffer);
 rhi::image_id load_image_2d_rgba(const char *filename, rhi::Rhi *rhi, VkCommandBuffer cmdbuf);
+rhi::image_id load_image_2d_rgba(const char *filename, ccharspan file_contents, rhi::Rhi *rhi, VkCommandBuffer cmdbuf, rhi::UploadBuffer *upload_buffer);
 rhi::image_id load_image_2d_rgba(const char *filename, ccharspan file_contents, rhi::Rhi *rhi, VkCommandBuffer cmdbuf);
 
 } // namespace quickgui

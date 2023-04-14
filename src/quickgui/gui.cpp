@@ -243,6 +243,14 @@ bool toggle_full_screen(SDL_Window *w)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& layout, ccharspan data, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
+{
+    auto img_id = r->make_image(layout.to_vk());
+    VkDeviceSize offset = upload_buffer->add(rhi::g_rhi, data.data(), data.size());
+    r->set_name(img_id, filename);
+    r->upload_image(img_id, layout, data, cmd, upload_buffer, offset);
+    return img_id;
+}
 rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& layout, ccharspan data, rhi::Rhi *r, VkCommandBuffer cmd)
 {
     auto img_id = r->make_image(layout.to_vk());
@@ -251,18 +259,35 @@ rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& l
     return img_id;
 }
 
+rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
+{
+    auto layout = stb_layout(data);
+    VkDeviceSize offset = upload_buffer->add(rhi::g_rhi, data.data, data.data_size());
+    return load_image_2d_rgba(filename, layout, data.to_span(), r, cmd, upload_buffer);
+}
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd)
 {
     auto layout = stb_layout(data);
     return load_image_2d_rgba(filename, layout, data.to_span(), r, cmd);
 }
 
+rhi::image_id load_image_2d_rgba(const char *filename, ccharspan file_contents, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
+{
+    stb_image_data data(file_contents, RequiredChannels::four);
+    return load_image_2d_rgba(filename, data, r, cmd, upload_buffer);
+}
 rhi::image_id load_image_2d_rgba(const char *filename, ccharspan file_contents, rhi::Rhi *r, VkCommandBuffer cmd)
 {
     stb_image_data data(file_contents, RequiredChannels::four);
     return load_image_2d_rgba(filename, data, r, cmd);
 }
 
+rhi::image_id load_image_2d_rgba(const char *filename, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
+{
+    String buf = c4::fs::file_get_contents<String>(filename);
+    ccharspan file_contents = {buf.data(), buf.size()};
+    return load_image_2d_rgba(filename, file_contents, r, cmd, upload_buffer);
+}
 rhi::image_id load_image_2d_rgba(const char *filename, rhi::Rhi *r, VkCommandBuffer cmd)
 {
     String buf = c4::fs::file_get_contents<String>(filename);
@@ -539,17 +564,25 @@ void GuiImage::load_existing(rhi::image_id img)
     load_existing(img, g_gui_assets.default_sampler);
 }
 
-void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
+void GuiImage::load(const char *filename)
 {
-    img_id = load_image_2d_rgba(filename, layout, img_data, &rhi::g_rhi, cmd_buf);
-    view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
-    rhi::g_rhi.set_name(img_id, filename);
-    rhi::g_rhi.set_name(view_id, filename);
-    desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
+    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
 }
+void GuiImage::load(const char *filename, rhi::UploadBuffer *upload_buffer)
+{
+    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
+
 void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout)
 {
     load(filename, img_data, layout, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::UploadBuffer *upload_buffer)
+{
+    load(filename, img_data, layout, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer(), upload_buffer);
     rhi::g_rhi.mark_usr_cmd_buffer();
 }
 
@@ -561,11 +594,32 @@ void GuiImage::load(const char *filename, rhi::sampler_id sampler, VkCommandBuff
     rhi::g_rhi.set_name(view_id, filename);
     desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
 }
-void GuiImage::load(const char *filename)
+void GuiImage::load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer)
 {
-    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
-    rhi::g_rhi.mark_usr_cmd_buffer();
+    img_id = load_image_2d_rgba(filename, &rhi::g_rhi, cmd_buf, upload_buffer);
+    view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
+    rhi::g_rhi.set_name(img_id, filename);
+    rhi::g_rhi.set_name(view_id, filename);
+    desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
 }
+
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
+{
+    img_id = load_image_2d_rgba(filename, layout, img_data, &rhi::g_rhi, cmd_buf);
+    view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
+    rhi::g_rhi.set_name(img_id, filename);
+    rhi::g_rhi.set_name(view_id, filename);
+    desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
+}
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer)
+{
+    img_id = load_image_2d_rgba(filename, layout, img_data, &rhi::g_rhi, cmd_buf, upload_buffer);
+    view_id = rhi::g_rhi.make_image_view(rhi::g_rhi.get_image(img_id));
+    rhi::g_rhi.set_name(img_id, filename);
+    rhi::g_rhi.set_name(view_id, filename);
+    desc_set = ImGui_ImplVulkan_AddTexture(rhi::g_rhi.get_sampler(sampler), rhi::g_rhi.get_image_view(view_id));
+}
+
 
 void GuiImage::destroy()
 {
