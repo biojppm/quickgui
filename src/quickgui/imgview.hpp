@@ -62,7 +62,7 @@ struct imgviewtype
 };
 
 
-// data view for a tightly packed image
+/** data view for a tightly packed image */
 template<class T>
 struct basic_imgview
 {
@@ -201,7 +201,7 @@ public:
         const size_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(U) < buf_size);
         C4_XASSERT(p < num_values());
-        U *C4_RESTRICT arr = reinterpret_cast<U *>(buf);
+        U *C4_RESTRICT const arr = reinterpret_cast<U *>(buf);
         arr[p] = chval;
     }
 
@@ -215,7 +215,7 @@ public:
         const size_t p = pos(w, h);
         C4_XASSERT(p * sizeof(T) < buf_size);
         C4_XASSERT(p < num_values());
-        U *C4_RESTRICT arr = reinterpret_cast<U *>(buf);
+        U *C4_RESTRICT const arr = reinterpret_cast<U *>(buf);
         arr[p] = chval;
     }
 
@@ -226,6 +226,11 @@ public:
 using wimgview = basic_imgview<uint8_t>;
 using imgview = basic_imgview<const uint8_t>;
 
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 imgview make_imgview(void const* buf, size_t sz, imgview const& blueprint);
 wimgview make_wimgview(void *buf, size_t sz, imgview const& blueprint);
 
@@ -233,6 +238,68 @@ imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
                       size_t num_channels, imgview::data_type_e data_type);
 wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
                       size_t num_channels, imgview::data_type_e data_type);
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+template<class CharContainer>
+imgview make_imgview(CharContainer *container, imgview const& blueprint)
+{
+    static_assert(sizeof(typename CharContainer::value_type) == 1u);
+    imgview dst = make_imgview(container->data(), container->size(), blueprint);
+    if(dst.bytes_required() > container->size())
+    {
+        container->resize(dst.bytes_required());
+        dst = make_imgview(container->data(), container->size(), blueprint);
+    }
+    return dst;
+}
+template<class CharContainer>
+wimgview make_wimgview(CharContainer *container, imgview const& blueprint)
+{
+    static_assert(sizeof(typename CharContainer::value_type) == 1u);
+    wimgview dst = make_wimgview(container->data(), container->size(), blueprint);
+    if(dst.bytes_required() > container->size())
+    {
+        container->resize(dst.bytes_required());
+        dst = make_wimgview(container->data(), container->size(), blueprint);
+    }
+    return dst;
+}
+
+template<class CharContainer>
+imgview make_imgview(CharContainer *container, size_t width, size_t height,
+                     size_t num_channels, imgview::data_type_e data_type)
+{
+    static_assert(sizeof(typename CharContainer::value_type) == 1u);
+    imgview dst = make_imgview(container->data(), container->size(), width, height, num_channels, data_type);
+    if(dst.bytes_required() > container->size())
+    {
+        container->resize(dst.bytes_required());
+        dst = make_imgview(container->data(), container->size(), width, height, num_channels, data_type);
+    }
+    return dst;
+}
+template<class CharContainer>
+wimgview make_wimgview(CharContainer *container, size_t width, size_t height,
+                      size_t num_channels, imgview::data_type_e data_type)
+{
+    static_assert(sizeof(typename CharContainer::value_type) == 1u);
+    wimgview dst = make_wimgview(container->data(), container->size(), width, height, num_channels, data_type);
+    if(dst.bytes_required() > container->size())
+    {
+        container->resize(dst.bytes_required());
+        dst = make_wimgview(container->data(), container->size(), width, height, num_channels, data_type);
+    }
+    return dst;
+}
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 wimgview load_bmp(void *buf, size_t bufsz);
 size_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, size_t bmp_buf_sz);
