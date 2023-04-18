@@ -156,8 +156,9 @@ C4_CONST C4_ALWAYS_INLINE fcolor clamp(fcolor ret)
 /** for palettes @see palettes.hpp */
 struct colors
 {
+#define _defcolor4(name, r,g,b,a) constexpr inline static const ucolor name{UINT8_C(0x##r), UINT8_C(0x##g), UINT8_C(0x##b), UINT8_C(0x##a)}
 #define _defcolor(name, r,g,b) constexpr inline static const ucolor name{UINT8_C(0x##r), UINT8_C(0x##g), UINT8_C(0x##b)}
-
+    _defcolor4(none,     00,00,00,00);
     _defcolor(blue,      1f,77,b4);
     _defcolor(orange,    ff,7f,0e);
     _defcolor(green,     2c,a0,2c);
@@ -338,6 +339,7 @@ struct colors
     _defcolor(whitesmoke, F5,F5,F5);
     _defcolor(yellowgreen, 9A,CD,32);
 #undef _defcolor
+#undef _defcolor4
 };
 
 } // namespace quickgui
