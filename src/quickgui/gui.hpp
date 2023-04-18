@@ -55,6 +55,8 @@ struct GuiImage
     void load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer);
     void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout);
     void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::UploadBuffer *upload_buffer);
+    void load(const char *filename, ccharspan img_data, rhi::sampler_id sampler, rhi::ImageLayout const& layout);
+    void load(const char *filename, ccharspan img_data, rhi::sampler_id sampler, rhi::ImageLayout const& layout, rhi::UploadBuffer *upload_buffer);
     void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf);
     void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer);
     void destroy();
@@ -75,6 +77,7 @@ struct GuiAssets
 {
     using Image = GuiImage; // remove this
     rhi::sampler_id default_sampler;
+    rhi::sampler_id nearest_sampler;
     void acquire(VkCommandBuffer cmd_buf);
     void release();
 };

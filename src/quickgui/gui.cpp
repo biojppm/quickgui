@@ -586,6 +586,17 @@ void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout c
     rhi::g_rhi.mark_usr_cmd_buffer();
 }
 
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::sampler_id sampler, rhi::ImageLayout const& layout)
+{
+    load(filename, img_data, layout, sampler, rhi::g_rhi.usr_cmd_buffer());
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
+void GuiImage::load(const char *filename, ccharspan img_data, rhi::sampler_id sampler, rhi::ImageLayout const& layout, rhi::UploadBuffer *upload_buffer)
+{
+    load(filename, img_data, layout, sampler, rhi::g_rhi.usr_cmd_buffer(), upload_buffer);
+    rhi::g_rhi.mark_usr_cmd_buffer();
+}
+
 void GuiImage::load(const char *filename, rhi::sampler_id sampler, VkCommandBuffer cmd_buf)
 {
     img_id = load_image_2d_rgba(filename, &rhi::g_rhi, cmd_buf);
@@ -687,7 +698,11 @@ void GuiImage::display(ImVec2 display_size) const
 
 void GuiAssets::acquire(VkCommandBuffer cmd_buf)
 {
-    default_sampler = rhi::g_rhi.make_sampler(rhi::g_rhi.build_sampler());
+    auto params = rhi::g_rhi.build_sampler();
+    default_sampler = rhi::g_rhi.make_sampler(params);
+    nearest_sampler = rhi::g_rhi.make_sampler(params.filter(VK_FILTER_NEAREST));
+    rhi::g_rhi.set_name(default_sampler, "gui_sampler/default");
+    rhi::g_rhi.set_name(nearest_sampler, "gui_sampler/nearest");
     //logo.load("./icons/logo.png", default_sampler, cmd_buf);
     (void)cmd_buf;
 }
@@ -695,7 +710,8 @@ void GuiAssets::acquire(VkCommandBuffer cmd_buf)
 void GuiAssets::release()
 {
     //logo = {};
-    default_sampler = {};
+    rhi::g_rhi.destroy_sampler(default_sampler);
+    rhi::g_rhi.destroy_sampler(nearest_sampler);
 }
 
 } // namespace quickgui

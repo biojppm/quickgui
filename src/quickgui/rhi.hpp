@@ -106,14 +106,14 @@ struct SamplerBuilder
         info.maxLod = 1000;
         info.maxAnisotropy = 1.0f;
     }
-    SamplerBuilder &mag_filter(VkFilter mode) { info.magFilter = mode; return *this; }
-    SamplerBuilder &min_filter(VkFilter mode) { info.minFilter = mode; return *this; }
-    SamplerBuilder &filter(VkFilter mode) { info.magFilter = info.minFilter = mode; return *this; }
-    SamplerBuilder &mipmap(VkSamplerMipmapMode mode) { info.mipmapMode = mode; return *this; }
-    SamplerBuilder &address_u(VkSamplerAddressMode mode) { info.addressModeU = mode; return *this; }
-    SamplerBuilder &address_v(VkSamplerAddressMode mode) { info.addressModeV = mode; return *this; }
-    SamplerBuilder &address_w(VkSamplerAddressMode mode) { info.addressModeW = mode; return *this; }
-    SamplerBuilder &address(VkSamplerAddressMode mode) { info.addressModeU = info.addressModeV = info.addressModeW = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &mag_filter(VkFilter mode) noexcept { info.magFilter = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &min_filter(VkFilter mode) noexcept { info.minFilter = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &filter(VkFilter mode) noexcept { info.magFilter = info.minFilter = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &mipmap(VkSamplerMipmapMode mode) noexcept { info.mipmapMode = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &address_u(VkSamplerAddressMode mode) noexcept { info.addressModeU = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &address_v(VkSamplerAddressMode mode) noexcept { info.addressModeV = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &address_w(VkSamplerAddressMode mode) noexcept { info.addressModeW = mode; return *this; }
+    C4_ALWAYS_INLINE SamplerBuilder &address(VkSamplerAddressMode mode) noexcept { info.addressModeU = info.addressModeV = info.addressModeW = mode; return *this; }
 };
 
 
