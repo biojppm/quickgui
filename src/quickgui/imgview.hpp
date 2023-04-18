@@ -20,7 +20,7 @@ struct imgviewtype
         // nothing else is supported
     } data_type_e;
 
-    static size_t data_size(data_type_e dt) noexcept
+    static uint32_t data_size(data_type_e dt) noexcept
     {
         switch(dt)
         {
@@ -77,25 +77,25 @@ struct basic_imgview
 public:
 
     T* C4_RESTRICT buf = nullptr;
-    size_t buf_size = 0;
+    uint32_t buf_size = 0;
 
-    size_t width = 0;       // x, or number of columns
-    size_t height = 0;      // y, or number of rows
-    size_t num_channels = 0;
+    uint32_t width = 0;       // x, or number of columns
+    uint32_t height = 0;      // y, or number of rows
+    uint32_t num_channels = 0;
     data_type_e data_type = imgviewtype::u8;
 
 public:
 
-    C4_ALWAYS_INLINE size_t pixel_area() const noexcept { return width * height; }
-    C4_ALWAYS_INLINE size_t num_values() const noexcept { return width * height * num_channels; }
-    C4_ALWAYS_INLINE size_t bytes_required() const noexcept { return imgviewtype::data_size(data_type) * width * height * num_channels; }
-    C4_ALWAYS_INLINE size_t data_type_size() const noexcept { return imgviewtype::data_size(data_type); }
-    C4_ALWAYS_INLINE size_t num_bytes_per_channel() const { return imgviewtype::data_size(data_type); }
+    C4_ALWAYS_INLINE uint32_t pixel_area() const noexcept { return width * height; }
+    C4_ALWAYS_INLINE uint32_t num_values() const noexcept { return width * height * num_channels; }
+    C4_ALWAYS_INLINE uint32_t bytes_required() const noexcept { return imgviewtype::data_size(data_type) * width * height * num_channels; }
+    C4_ALWAYS_INLINE uint32_t data_type_size() const noexcept { return imgviewtype::data_size(data_type); }
+    C4_ALWAYS_INLINE uint32_t num_bytes_per_channel() const { return imgviewtype::data_size(data_type); }
 
 public:
 
-    void reset(T *buf, size_t sz, size_t width, size_t height,
-               size_t num_channels, data_type_e data_type);
+    void reset(T *buf, uint32_t sz, uint32_t width, uint32_t height,
+               uint32_t num_channels, data_type_e data_type);
 
 public:
 
@@ -122,7 +122,14 @@ public:
 
 public:
 
-    C4_ALWAYS_INLINE size_t pos(size_t w, size_t h) const noexcept
+    C4_ALWAYS_INLINE uint32_t pxpos(uint32_t w, uint32_t h) const noexcept
+    {
+        C4_ASSERT(w < width);
+        C4_ASSERT(h < height);
+        return (h * width + w);
+    }
+
+    C4_ALWAYS_INLINE uint32_t pos(uint32_t w, uint32_t h) const noexcept
     {
         C4_ASSERT(w < width);
         C4_ASSERT(h < height);
@@ -130,7 +137,7 @@ public:
         return (h * width + w);
     }
 
-    C4_ALWAYS_INLINE size_t pos(size_t w, size_t h, size_t ch) const noexcept
+    C4_ALWAYS_INLINE uint32_t pos(uint32_t w, uint32_t h, uint32_t ch) const noexcept
     {
         C4_ASSERT(w < width);
         C4_ASSERT(h < height);
@@ -168,11 +175,11 @@ public:
     }
 
     template<class U>
-    U get(size_t w, size_t h, size_t ch) const noexcept
+    U get(uint32_t w, uint32_t h, uint32_t ch) const noexcept
     {
         _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
-        const size_t p = pos(w, h, ch);
+        const uint32_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(U) < buf_size);
         C4_XASSERT(p < num_values());
         U const *C4_RESTRICT const arr = reinterpret_cast<U const *>(buf);
@@ -180,12 +187,12 @@ public:
     }
 
     template<class U>
-    U get(size_t w, size_t h) const noexcept
+    U get(uint32_t w, uint32_t h) const noexcept
     {
         _imgviewcheck(U);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
-        const size_t p = pos(w, h);
+        const uint32_t p = pos(w, h);
         C4_XASSERT(p * sizeof(U) < buf_size);
         C4_XASSERT(p < num_values());
         U const *C4_RESTRICT const arr = reinterpret_cast<U const *>(buf);
@@ -193,12 +200,12 @@ public:
     }
 
     template<class U, class V=T>
-    auto set(size_t w, size_t h, size_t ch, T chval) const noexcept
+    auto set(uint32_t w, uint32_t h, uint32_t ch, T chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
         _imgviewcheck(U);
         C4_XASSERT(buf != nullptr);
-        const size_t p = pos(w, h, ch);
+        const uint32_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(U) < buf_size);
         C4_XASSERT(p < num_values());
         U *C4_RESTRICT const arr = reinterpret_cast<U *>(buf);
@@ -206,13 +213,13 @@ public:
     }
 
     template<class U, class V=T>
-    auto set(size_t w, size_t h, U chval) const noexcept
+    auto set(uint32_t w, uint32_t h, U chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
         _imgviewcheck(T);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
-        const size_t p = pos(w, h);
+        const uint32_t p = pos(w, h);
         C4_XASSERT(p * sizeof(T) < buf_size);
         C4_XASSERT(p < num_values());
         U *C4_RESTRICT const arr = reinterpret_cast<U *>(buf);
@@ -231,13 +238,13 @@ using imgview = basic_imgview<const uint8_t>;
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-imgview make_imgview(void const* buf, size_t sz, imgview const& blueprint);
-wimgview make_wimgview(void *buf, size_t sz, imgview const& blueprint);
+imgview make_imgview(void const* buf, uint32_t sz, imgview const& blueprint);
+wimgview make_wimgview(void *buf, uint32_t sz, imgview const& blueprint);
 
-imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
-                      size_t num_channels, imgview::data_type_e data_type);
-wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
-                      size_t num_channels, imgview::data_type_e data_type);
+imgview make_imgview(void const* buf, uint32_t sz, uint32_t width, uint32_t height,
+                      uint32_t num_channels, imgview::data_type_e data_type);
+wimgview make_wimgview(void *buf, uint32_t sz, uint32_t width, uint32_t height,
+                      uint32_t num_channels, imgview::data_type_e data_type);
 
 
 //-----------------------------------------------------------------------------
@@ -248,11 +255,11 @@ template<class CharContainer>
 imgview make_imgview(CharContainer *container, imgview const& blueprint)
 {
     static_assert(sizeof(typename CharContainer::value_type) == 1u);
-    imgview dst = make_imgview(container->data(), container->size(), blueprint);
+    imgview dst = make_imgview(container->data(), (uint32_t)container->size(), blueprint);
     if(dst.bytes_required() > container->size())
     {
         container->resize(dst.bytes_required());
-        dst = make_imgview(container->data(), container->size(), blueprint);
+        dst = make_imgview(container->data(), (uint32_t)container->size(), blueprint);
     }
     return dst;
 }
@@ -260,38 +267,38 @@ template<class CharContainer>
 wimgview make_wimgview(CharContainer *container, imgview const& blueprint)
 {
     static_assert(sizeof(typename CharContainer::value_type) == 1u);
-    wimgview dst = make_wimgview(container->data(), container->size(), blueprint);
+    wimgview dst = make_wimgview(container->data(), (uint32_t)container->size(), blueprint);
     if(dst.bytes_required() > container->size())
     {
         container->resize(dst.bytes_required());
-        dst = make_wimgview(container->data(), container->size(), blueprint);
+        dst = make_wimgview(container->data(), (uint32_t)container->size(), blueprint);
     }
     return dst;
 }
 
 template<class CharContainer>
-imgview make_imgview(CharContainer *container, size_t width, size_t height,
-                     size_t num_channels, imgview::data_type_e data_type)
+imgview make_imgview(CharContainer *container, uint32_t width, uint32_t height,
+                     uint32_t num_channels, imgview::data_type_e data_type)
 {
     static_assert(sizeof(typename CharContainer::value_type) == 1u);
-    imgview dst = make_imgview(container->data(), container->size(), width, height, num_channels, data_type);
+    imgview dst = make_imgview(container->data(), (uint32_t)container->size(), width, height, num_channels, data_type);
     if(dst.bytes_required() > container->size())
     {
         container->resize(dst.bytes_required());
-        dst = make_imgview(container->data(), container->size(), width, height, num_channels, data_type);
+        dst = make_imgview(container->data(), (uint32_t)container->size(), width, height, num_channels, data_type);
     }
     return dst;
 }
 template<class CharContainer>
-wimgview make_wimgview(CharContainer *container, size_t width, size_t height,
-                      size_t num_channels, imgview::data_type_e data_type)
+wimgview make_wimgview(CharContainer *container, uint32_t width, uint32_t height,
+                       uint32_t num_channels, imgview::data_type_e data_type)
 {
     static_assert(sizeof(typename CharContainer::value_type) == 1u);
-    wimgview dst = make_wimgview(container->data(), container->size(), width, height, num_channels, data_type);
+    wimgview dst = make_wimgview(container->data(), (uint32_t)container->size(), width, height, num_channels, data_type);
     if(dst.bytes_required() > container->size())
     {
         container->resize(dst.bytes_required());
-        dst = make_wimgview(container->data(), container->size(), width, height, num_channels, data_type);
+        dst = make_wimgview(container->data(), (uint32_t)container->size(), width, height, num_channels, data_type);
     }
     return dst;
 }
@@ -301,8 +308,8 @@ wimgview make_wimgview(CharContainer *container, size_t width, size_t height,
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-wimgview load_bmp(void *buf, size_t bufsz);
-size_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, size_t bmp_buf_sz);
+wimgview load_bmp(void *buf, uint32_t bufsz);
+uint32_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_sz);
 
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;

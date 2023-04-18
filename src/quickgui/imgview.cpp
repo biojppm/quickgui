@@ -161,8 +161,8 @@ size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
 
 
 template<class T>
-void basic_imgview<T>::reset(T *ibuf, size_t sz, size_t width_, size_t height_,
-                             size_t num_channels_, imgview::data_type_e dt)
+void basic_imgview<T>::reset(T *ibuf, uint32_t sz, uint32_t width_, uint32_t height_,
+                             uint32_t num_channels_, imgview::data_type_e dt)
 {
     buf = ibuf;
     buf_size = sz;
@@ -178,29 +178,29 @@ void basic_imgview<T>::reset(T *ibuf, size_t sz, size_t width_, size_t height_,
 }
 
 
-imgview make_imgview(void const* buf, size_t sz, imgview const& blueprint)
+imgview make_imgview(void const* buf, uint32_t sz, imgview const& blueprint)
 {
     imgview v;
     v.reset((imgview::buffer_type*)buf, sz, blueprint.width, blueprint.height, blueprint.num_channels, blueprint.data_type);
     return v;
 }
 
-wimgview make_wimgview(void *buf, size_t sz, imgview const& blueprint)
+wimgview make_wimgview(void *buf, uint32_t sz, imgview const& blueprint)
 {
     wimgview v;
     v.reset((wimgview::buffer_type*)buf, sz, blueprint.width, blueprint.height, blueprint.num_channels, blueprint.data_type);
     return v;
 }
 
-wimgview make_wimgview(void *buf, size_t sz, size_t width, size_t height,
-                       size_t num_channels, imgview::data_type_e dt)
+wimgview make_wimgview(void *buf, uint32_t sz, uint32_t width, uint32_t height,
+                       uint32_t num_channels, imgview::data_type_e dt)
 {
     wimgview v;
     v.reset((wimgview::buffer_type*)buf, sz, width, height, num_channels, dt);
     return v;
 }
-imgview make_imgview(void const* buf, size_t sz, size_t width, size_t height,
-                     size_t num_channels, imgview::data_type_e dt)
+imgview make_imgview(void const* buf, uint32_t sz, uint32_t width, uint32_t height,
+                     uint32_t num_channels, imgview::data_type_e dt)
 {
     imgview v;
     v.reset((imgview::buffer_type*)buf, sz, width, height, num_channels, dt);
@@ -220,7 +220,7 @@ void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
     using I = int32_t; // using signed indices for faster iteration
     const I H = (I)src.height;
     const I N = (I)src.width * (I)src.num_channels * (I)src.data_type_size();
-    const size_t sN = (size_t)N;
+    const uint32_t sN = (uint32_t)N;
     T const* C4_RESTRICT src_buf = (T const*) src.buf;
     T      * C4_RESTRICT dst_buf = (T      *) dst.buf;
     for(I h = 0; h < H; ++h)
