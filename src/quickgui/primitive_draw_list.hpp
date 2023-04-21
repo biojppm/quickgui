@@ -17,8 +17,7 @@ struct PrimitiveDrawList
     typedef enum { text, point, line, rect, rect_filled, poly, circle } PrimitiveType_e;
     struct Primitive
     {
-        C4_SUPPRESS_WARNING_MSVC_PUSH
-        C4_SUPPRESS_WARNING_MSVC(4582) // constructor is not implicitly called
+        C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4582) // constructor is not implicitly called
         Primitive()
             : rect_filled()
             , color()
@@ -26,6 +25,7 @@ struct PrimitiveDrawList
             , type()
         {}
         C4_SUPPRESS_WARNING_MSVC_POP
+        C4_SUPPRESS_WARNING_CLANG_WITH_PUSH("-Wnested-anon-types")
         union
         {
             struct { ImVec2 p; uint32_t first_char, num_chars; } text;
@@ -36,6 +36,7 @@ struct PrimitiveDrawList
             struct { uint32_t first_point, num_points; } poly;
             struct { ImVec2 center; float radius; } circle;
         };
+        C4_SUPPRESS_WARNING_CLANG_POP
         ucolor color;
         float thickness;
         PrimitiveType_e type;

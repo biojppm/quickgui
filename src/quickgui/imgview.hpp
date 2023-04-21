@@ -146,11 +146,10 @@ public:
     }
 
     #define _imgviewcheck(T)\
-        using vty = imgviewtype;                        \
         C4_XASSERT(sizeof(T) == num_bytes_per_channel()); \
-        C4_XASSERT(std::is_integral_v<T> == ((data_type == vty::u8) || (data_type == vty::i8) || (data_type == vty::u16) || (data_type == vty::u32) || (data_type == vty::i32))); \
-        C4_XASSERT(std::is_signed_v<T> == ((data_type == vty::i8) || (data_type == vty::i32) || (data_type == vty::f32))); \
-        C4_XASSERT(std::is_floating_point_v<T> == (data_type == vty::f32)) \
+        C4_XASSERT(std::is_integral_v<T> == ((data_type == imgviewtype::u8) || (data_type == imgviewtype::i8) || (data_type == imgviewtype::u16) || (data_type == imgviewtype::u32) || (data_type == imgviewtype::i32))); \
+        C4_XASSERT(std::is_signed_v<T> == ((data_type == imgviewtype::i8) || (data_type == imgviewtype::i32) || (data_type == imgviewtype::f32))); \
+        C4_XASSERT(std::is_floating_point_v<T> == (data_type == imgviewtype::f32)) \
 
     template<class U>
     auto data_as() const noexcept
@@ -167,8 +166,7 @@ public:
         -> std::conditional_t<std::is_const_v<T>, C const*, C*>
     {
         C4_ASSERT(sizeof(C) == num_channels * num_bytes_per_channel());
-        using U = typename C::value_type;
-        _imgviewcheck(U);
+        _imgviewcheck(typename C::value_type);
         C4_XASSERT(buf != nullptr);
         using rettype = std::conditional_t<std::is_const_v<T>, C const, C>;
         return reinterpret_cast<rettype*>(buf);
