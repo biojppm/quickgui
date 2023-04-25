@@ -145,6 +145,11 @@ ImRect get_current_plot_rect()
 void set_column_contents_aligned_right(int col, c4::csubstr txt)
 {
     ImGui::TableSetColumnIndex(col);
+    set_column_contents_aligned_right(txt);
+}
+
+void set_column_contents_aligned_right(c4::csubstr txt)
+{
     /* https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns */
     const float posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(txt.str).x
                 - ImGui::GetScrollX() - ImGui::GetStyle().ItemSpacing.x);
