@@ -145,7 +145,7 @@ public:
         return ch + num_channels * (h * width + w);
     }
 
-    #define _imgviewcheck(T)\
+    #define _typecheck(T)\
         C4_XASSERT(sizeof(T) == num_bytes_per_channel()); \
         C4_XASSERT(std::is_integral_v<T> == ((data_type == imgviewtype::u8) || (data_type == imgviewtype::i8) || (data_type == imgviewtype::u16) || (data_type == imgviewtype::u32) || (data_type == imgviewtype::i32))); \
         C4_XASSERT(std::is_signed_v<T> == ((data_type == imgviewtype::i8) || (data_type == imgviewtype::i32) || (data_type == imgviewtype::f32))); \
@@ -155,7 +155,7 @@ public:
     auto data_as() const noexcept
         -> std::conditional_t<std::is_const_v<T>, U const*, U*>
     {
-        _imgviewcheck(U);
+        _typecheck(U);
         C4_XASSERT(buf != nullptr);
         using rettype = std::conditional_t<std::is_const_v<T>, U const, U>;
         return reinterpret_cast<rettype*>(buf);
@@ -166,7 +166,7 @@ public:
         -> std::conditional_t<std::is_const_v<T>, C const*, C*>
     {
         C4_ASSERT(sizeof(C) == num_channels * num_bytes_per_channel());
-        _imgviewcheck(typename C::value_type);
+        _typecheck(typename C::value_type);
         C4_XASSERT(buf != nullptr);
         using rettype = std::conditional_t<std::is_const_v<T>, C const, C>;
         return reinterpret_cast<rettype*>(buf);
@@ -175,7 +175,7 @@ public:
     template<class U>
     U get(uint32_t w, uint32_t h, uint32_t ch) const noexcept
     {
-        _imgviewcheck(U);
+        _typecheck(U);
         C4_XASSERT(buf != nullptr);
         const uint32_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(U) < buf_size);
@@ -187,7 +187,7 @@ public:
     template<class U>
     U get(uint32_t w, uint32_t h) const noexcept
     {
-        _imgviewcheck(U);
+        _typecheck(U);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
         const uint32_t p = pos(w, h);
@@ -201,7 +201,7 @@ public:
     auto set(uint32_t w, uint32_t h, uint32_t ch, T chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
-        _imgviewcheck(U);
+        _typecheck(U);
         C4_XASSERT(buf != nullptr);
         const uint32_t p = pos(w, h, ch);
         C4_XASSERT(p * sizeof(U) < buf_size);
@@ -214,7 +214,7 @@ public:
     auto set(uint32_t w, uint32_t h, U chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
-        _imgviewcheck(T);
+        _typecheck(T);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
         const uint32_t p = pos(w, h);
@@ -224,7 +224,7 @@ public:
         arr[p] = chval;
     }
 
-    #undef _imgviewcheck
+    #undef _typecheck
 };
 
 
