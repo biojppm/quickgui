@@ -27,6 +27,7 @@ struct GuiConfig
 
 
 bool gui_init(GuiConfig const& cfg);
+void gui_wait_idle_rhi();
 void gui_terminate();
 
 void gui_acquire_assets();

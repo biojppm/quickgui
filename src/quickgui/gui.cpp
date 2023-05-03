@@ -375,11 +375,13 @@ bool gui_init(GuiConfig const& cfg)
     return true;
 }
 
+void gui_wait_idle_rhi()
+{
+    C4_CHECK_VK(vkDeviceWaitIdle(g_Device));
+}
 
 void gui_terminate()
 {
-    C4_CHECK_VK(vkDeviceWaitIdle(g_Device));
-
     gui_release_assets();
     quickgui::rhi::rhi_terminate();
 

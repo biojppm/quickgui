@@ -12,6 +12,7 @@ struct OverlayCanvas
 
     OverlayCanvas() : m_transformed_points() { m_transformed_points.reserve(128); }
 
+    void clear() { m_transformed_points.clear(); m_transformed_points.shrink_to_fit(); }
     void draw(PrimitiveDrawList const& primitives, ImVec2 primitives_subject_size,
               ImVec2 canvas_position, ImVec2 canvas_size, ImDrawList *draw_list);
 
