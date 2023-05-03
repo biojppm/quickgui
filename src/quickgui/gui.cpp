@@ -634,8 +634,10 @@ void GuiImage::load(const char *filename, ccharspan img_data, rhi::ImageLayout c
 
 void GuiImage::destroy()
 {
-    rhi::g_rhi.destroy_image(img_id);
-    rhi::g_rhi.destroy_image_view(view_id);
+    if(img_id)
+        rhi::g_rhi.destroy_image(img_id);
+    if(view_id)
+        rhi::g_rhi.destroy_image_view(view_id);
 }
 
 ImVec2 GuiImage::size() const

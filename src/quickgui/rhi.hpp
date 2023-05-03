@@ -260,14 +260,15 @@ struct Buffer
 template<class HandleType>
 struct HandleCollection
 {
+    enum : size_t { none = (size_t)-1 };
     /** an opaque type-safe id */
     class id_type
     {
         friend struct HandleCollection;
     protected:
-        size_t _id = (size_t)-1;
+        size_t _id = none;
     public:
-        inline operator bool () const { return _id != (size_t)-1; }
+        inline operator bool () const { return _id != none; }
     };
 
 public:
@@ -286,10 +287,10 @@ public:
 
     //! short-lived references! referencial integrity is not guaranteed,
     //! as an insertion may change the reference.
-    HandleType const& get_handle(id_type id) const { return handles[id._id]; }
+    HandleType const& get_handle(id_type id) const { C4_ASSERT(id); return handles[id._id]; }
     //! short-lived references! referencial integrity is not guaranteed,
     //! as an insertion may change the reference.
-    HandleType & get_handle(id_type id) { return handles[id._id]; }
+    HandleType & get_handle(id_type id) { C4_ASSERT(id); return handles[id._id]; }
 
     virtual ~HandleCollection()
     {
@@ -352,6 +353,7 @@ struct UploadBuffer
     Buffer m_buf = {};
     VkDeviceSize m_pos = {};
 
+    void destroy();
     void destroy(Rhi &rhi);
     [[nodiscard]] VkDeviceSize require(Rhi &rhi, VkDeviceSize num_bytes);
     [[nodiscard]] VkDeviceSize add(Rhi &rhi, void const *mem, VkDeviceSize sz);
@@ -419,10 +421,10 @@ public:
     [[nodiscard]] image_id make_image(VkImageCreateInfo const& C4_RESTRICT nfo, uint32_t mem_bits=VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) { return m_images.reset({}, nfo, mem_bits, m_device, m_allocator); }
     [[nodiscard]] image_id reset_image(image_id id, VkImageCreateInfo const& C4_RESTRICT nfo, uint32_t mem_bits=VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) { return m_images.reset(id, nfo, mem_bits, m_device, m_allocator); }
     void         destroy_image(image_id id) { return m_images.destroy(id, m_device, m_allocator); }
-    Image      & get_image   (image_id id)        { return m_images.get_handle(id); }
-    Image const& get_image   (image_id id) const  { return m_images.get_handle(id); }
-    void         set_name    (image_id id     , const char *name) { debug_marker_set_name(m_device, get_image(id).handle, name); }
-    void         set_name    (Image const& img, const char *name) { debug_marker_set_name(m_device, img.handle, name); }
+    Image      & get_image(image_id id)        { return m_images.get_handle(id); }
+    Image const& get_image(image_id id) const  { return m_images.get_handle(id); }
+    void         set_name (image_id id     , const char *name) { debug_marker_set_name(m_device, get_image(id).handle, name); }
+    void         set_name (Image const& img, const char *name) { debug_marker_set_name(m_device, img.handle, name); }
 
     // image views
     [[nodiscard]] image_view_id make_image_view(Image const& img) { return m_image_views.reset({}, img, m_device, m_allocator); }
@@ -438,10 +440,10 @@ public:
     [[nodiscard]] sampler_id make_sampler(SamplerBuilder const& b) { return m_samplers.reset({}, b, m_device, m_allocator); }
     [[nodiscard]] sampler_id reset_sampler(sampler_id id, SamplerBuilder const& b) { return m_samplers.reset(id, b, m_device, m_allocator); }
     void             destroy_sampler(sampler_id id) { return m_samplers.destroy(id, m_device, m_allocator); }
-    VkSampler      & get_sampler (sampler_id id)       { return m_samplers.get_handle(id); }
-    VkSampler const& get_sampler (sampler_id id) const { return m_samplers.get_handle(id); }
-    void             set_name    (sampler_id id       , const char *name) { debug_marker_set_name(m_device, get_sampler(id), name); }
-    void             set_name    (VkSampler const& smp, const char *name) { debug_marker_set_name(m_device, smp, name); }
+    VkSampler      & get_sampler(sampler_id id)       { return m_samplers.get_handle(id); }
+    VkSampler const& get_sampler(sampler_id id) const { return m_samplers.get_handle(id); }
+    void             set_name   (sampler_id id       , const char *name) { debug_marker_set_name(m_device, get_sampler(id), name); }
+    void             set_name   (VkSampler const& smp, const char *name) { debug_marker_set_name(m_device, smp, name); }
 
 };
 

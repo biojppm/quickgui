@@ -917,6 +917,10 @@ void UploadBuffer::destroy(Rhi &rhi)
     m_buf.destroy(rhi.m_device, rhi.m_allocator);
     m_pos = 0;
 }
+void UploadBuffer::destroy()
+{
+    destroy(g_rhi);
+}
 
 VkDeviceSize UploadBuffer::require(Rhi &rhi, VkDeviceSize num_bytes)
 {
