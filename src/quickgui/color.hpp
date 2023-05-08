@@ -130,6 +130,11 @@ C4_CONST C4_ALWAYS_INLINE ucolor alpha(ucolor c, uint8_t alpha)
     c.a = alpha;
     return c;
 }
+C4_CONST C4_ALWAYS_INLINE ucolor alpha(ucolor c, float alpha)
+{
+    c.a = (uint8_t)clamp01(alpha * 255.f);
+    return c;
+}
 C4_CONST C4_ALWAYS_INLINE ucolor alpha(fcolor c, float alpha)
 {
     c.a = alpha;
