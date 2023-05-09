@@ -344,6 +344,13 @@ void CleanupVulkanWindow()
 }
 
 
+C4_CONST bool NeedsSwapchainRebuild(VkResult err) noexcept
+{
+    return (err == VK_ERROR_OUT_OF_DATE_KHR ||
+            err == VK_ERROR_SURFACE_LOST_KHR ||
+            err == VK_SUBOPTIMAL_KHR);
+}
+
 /** @return true if the swap chain should be rebuilt */
 bool FrameStart(ImGui_ImplVulkanH_Window *wd)
 {
@@ -353,13 +360,19 @@ bool FrameStart(ImGui_ImplVulkanH_Window *wd)
     VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
 
     // this call will bump FrameIndex
-    VkResult err = vkAcquireNextImageKHR(g_Device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
-    if (err == VK_ERROR_OUT_OF_DATE_KHR)
+    const uint64_t timeout_ns = UINT64_C(100'000'000);
+    VkResult err = vkAcquireNextImageKHR(g_Device, wd->Swapchain, timeout_ns, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+    if(NeedsSwapchainRebuild(err))
         return true;
-    C4_CHECK_VK(err);
 
+    C4_ASSERT(wd->FrameIndex < wd->ImageCount);
     ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
-    C4_CHECK_VK(vkWaitForFences(g_Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));    // wait indefinitely instead of periodically checking
+    if(err != VK_TIMEOUT)
+    {
+        C4_CHECK_VK(err);
+        // wait indefinitely instead of periodically checking
+        C4_CHECK_VK(vkWaitForFences(g_Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+    }
     C4_CHECK_VK(vkResetFences(g_Device, 1, &fd->Fence));
 
     {
@@ -393,7 +406,7 @@ void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
     VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
     ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
 
-    // Record dear imgui primitives into command buffer
+    // Recpfstdord dear imgui primitives into command buffer
     ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer);
 
     // Submit command buffer
@@ -412,12 +425,12 @@ void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
         info.pSignalSemaphores = &render_complete_semaphore;
         if(fd->CommandBuffer2Used)
         {
-            C4_ASSERT(info.pCommandBuffers + 1 == &fd->CommandBuffer2);
             ++info.commandBufferCount;
             fd->CommandBuffer2Used = false;
+            C4_ASSERT(info.pCommandBuffers + 1 == &fd->CommandBuffer2);
+            C4_CHECK_VK(vkEndCommandBuffer(fd->CommandBuffer2));
         }
         C4_CHECK_VK(vkEndCommandBuffer(fd->CommandBuffer));
-        C4_CHECK_VK(vkEndCommandBuffer(fd->CommandBuffer2));
         C4_CHECK_VK(vkQueueSubmit(g_Queue, 1, &info, fd->Fence));
     }
 }
@@ -436,9 +449,7 @@ void FramePresent(ImGui_ImplVulkanH_Window* wd)
     info.pSwapchains = &wd->Swapchain;
     info.pImageIndices = &wd->FrameIndex;
     VkResult err = vkQueuePresentKHR(g_Queue, &info);
-    if(err == VK_ERROR_OUT_OF_DATE_KHR ||
-       err == VK_ERROR_SURFACE_LOST_KHR ||
-       err == VK_SUBOPTIMAL_KHR)
+    if(NeedsSwapchainRebuild(err))
     {
         g_SwapChainRebuild = true;
         return;
