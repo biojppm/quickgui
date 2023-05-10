@@ -360,18 +360,21 @@ bool FrameStart(ImGui_ImplVulkanH_Window *wd)
     VkSemaphore image_acquired_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
 
     // this call will bump FrameIndex
-    const uint64_t timeout_ns = UINT64_C(100'000'000);
+    const uint64_t timeout_ns = UINT64_C(60'000'000);
     VkResult err = vkAcquireNextImageKHR(g_Device, wd->Swapchain, timeout_ns, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
     bool needs_rebuild = false;
     if(NeedsSwapchainRebuild(err))
         needs_rebuild = true;
-    if(err != VK_TIMEOUT)
+    else if(err != VK_TIMEOUT)
         C4_CHECK_VK(err);
 
     C4_ASSERT(wd->FrameIndex < wd->ImageCount);
     ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
     if(err != VK_TIMEOUT)
-        C4_CHECK_VK(vkWaitForFences(g_Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));  // wait indefinitely instead of periodically checking
+    {
+        // wait indefinitely instead of periodically checking
+        C4_CHECK_VK(vkWaitForFences(g_Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+    }
     C4_CHECK_VK(vkResetFences(g_Device, 1, &fd->Fence));
 
     {
