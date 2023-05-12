@@ -11,6 +11,8 @@ namespace quickgui {
 
 namespace widgets {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 //-----------------------------------------------------------------------------
 
@@ -243,6 +245,8 @@ inline void draw_bg()
 {
     //draw_bg(quickgui::g_gui_assets.logo, /*topleft*/{5.f, 0.f}, /*pivot*/{0.f, 0.f});
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace widgets
 } // namespace quickgui

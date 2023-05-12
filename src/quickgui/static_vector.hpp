@@ -7,6 +7,9 @@
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 /** size is determined at creation; thereafter cannot resize, cannot
  * add or remove elements. Behaves as a unique_ptr<T[]>, but the data
  * is aligned. */
@@ -351,6 +354,8 @@ struct reusable_buffer
     }
 };
 C4_SUPPRESS_WARNING_MSVC_POP
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui
 

@@ -237,7 +237,7 @@ template<class T>
 duration from_hz(T hz)
 {
     static_assert(std::is_floating_point_v<T>);
-    return secs((duration::rep) T(1) / hz);
+    return secs(static_cast<duration::rep>(T(1) / hz));
 }
 
 

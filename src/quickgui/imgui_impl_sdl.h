@@ -15,7 +15,7 @@
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 #pragma once
-#include "imgui.h"      // IMGUI_IMPL_API
+#include "quickgui/imgui.hpp"      // IMGUI_IMPL_API
 
 struct SDL_Window;
 typedef union SDL_Event SDL_Event;

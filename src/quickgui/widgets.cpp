@@ -5,6 +5,9 @@
 namespace quickgui {
 namespace widgets {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 inline const ImColor green = ImColor::HSV(2.f/7.f, 0.6f, 0.6f);
 inline const ImColor green_hovered = ImColor::HSV(2.f/7.0f, 0.7f, 0.7f);
 inline const ImColor green_active = ImColor::HSV(2.f/7.0f, 0.8f, 0.8f);
@@ -152,7 +155,7 @@ void set_column_contents_aligned_right(c4::csubstr txt)
 {
     /* https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns */
     const float posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(txt.str).x
-                - ImGui::GetScrollX() - ImGui::GetStyle().ItemSpacing.x);
+                        - ImGui::GetScrollX() - ImGui::GetStyle().ItemSpacing.x);
     if(posX > ImGui::GetCursorPosX())
         ImGui::SetCursorPosX(posX);
     ImGui::TextUnformatted(txt.str);
@@ -275,5 +278,7 @@ void DynamicImage::flip()
     rhi_img.flip();
     ++flip_count;
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui

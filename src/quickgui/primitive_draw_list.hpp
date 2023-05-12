@@ -12,6 +12,9 @@
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 struct PrimitiveDrawList
 {
     typedef enum { text, point, line, rect, rect_filled, poly, circle } PrimitiveType_e;
@@ -147,6 +150,8 @@ public:
         prim.thickness = thickness;
     }
 };
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui
 

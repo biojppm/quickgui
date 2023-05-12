@@ -17,6 +17,9 @@
 namespace quickgui {
 namespace rhi {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 struct Rhi;
 extern Rhi &g_rhi;
 void rhi_init();
@@ -486,6 +489,8 @@ struct ImageDynamicCpu2Gpu
     Image&   img_rgpu() { return img(wcpu); }
     Image&   img_wgpu() { return img(rgpu); }
 };
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace rhi
 } // namespace quickgui

@@ -20,6 +20,9 @@
 #endif
 
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -1051,7 +1054,7 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
 {
     // ensure the staging upload buffer has enough room
     size_t num_bytes = layout.num_bytes();
-    size_t buf_size = use_upload_buffer_with(num_bytes);
+    (void)use_upload_buffer_with(num_bytes);
     // copy to the staging upload buffer
     VkDeviceSize offset = m_upload_buffer.add(*this, data.data(), data.size()); // this ensures adequate room
     // now upload
@@ -1281,3 +1284,5 @@ void ImageDynamicCpu2Gpu::finish_wcpu(VkOffset3D first, VkOffset3D last, ccharsp
 
 } // namespace rhi
 } // namespace quickgui
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

@@ -122,6 +122,9 @@ C4_ALWAYS_INLINE auto constexpr bit_cast(From src) noexcept
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 template<class T>
 using cache_pad = c4::MultSized<T, QUICKGUI_L1_CACHE_LINE_SIZE>;
 
@@ -318,7 +321,6 @@ template<class I>
 C4_ALWAYS_INLINE C4_CONST constexpr auto irange(I last) noexcept
     -> typename std::enable_if<std::is_integral_v<I>, detail::_irange<I>>::type
 {
-    C4_ASSERT(last >= 0);
     return detail::_irange<I>(I(0), last);
 }
 //! integer range, from first to last
@@ -593,6 +595,9 @@ inline void avx2_unroll4_stream(char *QUICKGUI_RESTRICT dst_, char const *QUICKG
 #endif
 
 } // namespace copy
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
+
 } // namespace quickgui
 
 #endif /* QUICKGUI_MEM_HPP_ */

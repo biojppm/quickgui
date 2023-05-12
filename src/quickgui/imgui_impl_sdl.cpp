@@ -44,7 +44,7 @@
 //  2017-08-25: Inputs: MousePos set to -FLT_MAX,-FLT_MAX when mouse is unavailable/missing (instead of -1,-1).
 //  2016-10-15: Misc: Added a void* user_data parameter to Clipboard function handlers.
 
-#include "imgui.h"
+#include "quickgui/imgui.hpp"
 #include "imgui_impl_sdl.h"
 
 // SDL
@@ -57,6 +57,10 @@
 
 #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE    true //SDL_VERSION_ATLEAST(2,0,4)
 #define SDL_HAS_VULKAN                      SDL_VERSION_ATLEAST(2,0,6)
+
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
 
 // Data
 static SDL_Window*  g_Window = NULL;
@@ -369,3 +373,5 @@ void ImGui_ImplSDL2_NewFrame(SDL_Window* window)
     // Update game controllers (if enabled and available)
     ImGui_ImplSDL2_UpdateGamepads();
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

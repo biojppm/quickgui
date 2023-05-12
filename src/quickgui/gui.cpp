@@ -15,6 +15,9 @@
 
 #include <SDL_vulkan.h>
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 // FIXME
 void SetupVulkan(const char **exts, uint32_t num_exts, quickgui::reusable_buffer *exts_buf);
 void CleanupVulkan();
@@ -262,7 +265,7 @@ rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& l
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
 {
     auto layout = stb_layout(data);
-    VkDeviceSize offset = upload_buffer->add(rhi::g_rhi, data.data, data.data_size());
+    (void)upload_buffer->add(rhi::g_rhi, data.data, data.data_size());
     return load_image_2d_rgba(filename, layout, data.to_span(), r, cmd, upload_buffer);
 }
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd)
@@ -573,7 +576,7 @@ void GuiImage::load(const char *filename)
 }
 void GuiImage::load(const char *filename, rhi::UploadBuffer *upload_buffer)
 {
-    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer());
+    load(filename, g_gui_assets.default_sampler, rhi::g_rhi.usr_cmd_buffer(), upload_buffer);
     rhi::g_rhi.mark_usr_cmd_buffer();
 }
 
@@ -719,3 +722,5 @@ void GuiAssets::release()
 }
 
 } // namespace quickgui
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

@@ -8,6 +8,8 @@
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wold-style-cast")
+
 struct imgviewtype
 {
     typedef enum {
@@ -311,6 +313,8 @@ uint32_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_
 
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui
 

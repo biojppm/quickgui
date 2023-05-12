@@ -2,6 +2,9 @@
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 namespace {
 C4_ALWAYS_INLINE C4_CONST ucolor shadow(ucolor c) noexcept
 {
@@ -40,7 +43,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const char *last = first + prim.text.num_chars;
             const ImVec2 pos = tr(prim.text.p);
             const ucolor shad = shadow(prim.color);
-            if(s_draw_shadow)
+            if(s_draw_shadow > 0.f)
                 draw_list->AddText(sh(pos), shad, first, last);
             draw_list->AddText(pos, prim.color, first, last);
             break;
@@ -54,7 +57,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const ImVec2 botr = p + ImVec2{ hps,  hps};
             const ImVec2 botl = p + ImVec2{-hps,  hps};
             const ucolor shad = shadow(prim.color);
-            if(s_draw_shadow)
+            if(s_draw_shadow > 0.f)
             {
                 // draw the square
                 draw_list->AddLine(sh(topl), sh(topr), shad, prim.thickness);
@@ -80,7 +83,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const ImVec2 p = tr(prim.line.p);
             const ImVec2 q = tr(prim.line.q);
             const ucolor shad = shadow(prim.color);
-            if(s_draw_shadow)
+            if(s_draw_shadow > 0.f)
                 draw_list->AddLine(sh(p), sh(q), shad, prim.thickness);
             draw_list->AddLine(p, q, prim.color, prim.thickness);
             break;
@@ -90,7 +93,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const ImVec2 min = tr(prim.rect.r.Min);
             const ImVec2 max = tr(prim.rect.r.Max);
             const ucolor shad = shadow(prim.color);
-            if(s_draw_shadow)
+            if(s_draw_shadow > 0.f)
                 draw_list->AddRect(sh(min), sh(max), shad);
             draw_list->AddRect(min, max, prim.color);
             break;
@@ -109,7 +112,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             {
                 // need to transform all the points; we do it in place
                 m_transformed_points.resize(prim.poly.num_points);
-                if(s_draw_shadow)
+                if(s_draw_shadow > 0.f)
                 {
                     const ucolor shad = shadow(prim.color);
                     for(uint32_t p = prim.poly.first_point; p < prim.poly.num_points; ++p)
@@ -127,7 +130,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const ImVec2 center = tr(prim.circle.center);
             const float radius = trlen(prim.circle.radius);
             const ucolor shad = shadow(prim.color);
-            if(s_draw_shadow)
+            if(s_draw_shadow > 0.f)
                 draw_list->AddCircle(sh(center), radius, shad);
             draw_list->AddCircle(center, radius, prim.color);
             break;
@@ -138,5 +141,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         }
     }
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui

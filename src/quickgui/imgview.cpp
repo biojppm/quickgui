@@ -6,8 +6,9 @@
 #include <cstring>
 
 
-C4_SUPPRESS_WARNING_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
 C4_SUPPRESS_WARNING_CLANG("-Wcast-align")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 namespace quickgui {
 
@@ -76,9 +77,9 @@ wimgview load_bmp(void * bmp_buf_, size_t bmp_buf_sz)
     C4_CHECK(info_header->height > 0);
     wimgview v = make_wimgview(
         /*buf*/bmp_buf + file_header->offset_data,
-        /*bufsz*/bmp_buf_sz - file_header->offset_data,
-        /*width*/(size_t)info_header->width,
-        /*height*/(size_t)info_header->height,
+        /*bufsz*/(uint32_t)(bmp_buf_sz - (size_t)file_header->offset_data),
+        /*width*/(uint32_t)info_header->width,
+        /*height*/(uint32_t)info_header->height,
         /*num_channels*/info_header->bit_count / 8u,
         /*data_type*/imgviewtype::u8);
     // remove any padding at the end of the rows
@@ -113,7 +114,7 @@ size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
         info_header->width = (int32_t)v.width;
         info_header->height = (int32_t)v.height;
         info_header->bit_count = bit_count;
-        info_header->size_image = (uint32_t)v.bytes_required();
+        info_header->size_image = v.bytes_required();
     }
     if(bit_count == 32)
     {
@@ -145,7 +146,7 @@ size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
     C4_ASSERT(num_bytes <= v.buf_size);
     if(char *field = _nextfield(num_bytes); field)
     {
-        if(field != (void*)v.buf)
+        if(field != (void const*)v.buf)
         {
             C4_ASSERT(!c4::mem_overlaps(field, v.buf, num_bytes, num_bytes));
             memcpy(field, v.buf, num_bytes);
@@ -231,7 +232,7 @@ void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
     }
 }
 
-void convert_channels(imgview const& C4_RESTRICT src, imgview & C4_RESTRICT dst) noexcept
+void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
 {
     C4_CHECK(src.data_type == imgviewtype::u8);
     C4_CHECK(dst.data_type == imgviewtype::u8);

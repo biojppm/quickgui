@@ -11,6 +11,8 @@ C4_SUPPRESS_WARNING_CLANG("-Wimplicit-int-conversion")
 C4_SUPPRESS_WARNING_CLANG("-Wcast-align")
 C4_SUPPRESS_WARNING_GCC_CLANG("-Wsign-conversion")
 C4_SUPPRESS_WARNING_GCC_CLANG("-Wdouble-promotion")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
 C4_SUPPRESS_WARNING_GCC("-Wconversion")
 C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 C4_SUPPRESS_WARNING_GCC("-Wtype-limits")
@@ -19,8 +21,10 @@ C4_SUPPRESS_WARNING_GCC("-Wtype-limits")
 C4_SUPPRESS_WARNING_MSVC_POP
 C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
-
 namespace quickgui {
+
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 stb_image_data::stb_image_data(quickgui::ccharspan file_contents, RequiredChannels channels)
     : data()
@@ -48,5 +52,7 @@ stb_image_data::~stb_image_data()
     if(data)
         stbi_image_free(data);
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui

@@ -83,6 +83,8 @@ GCC_CLANG
     -Wno-unused-variable
     -Wno-unused-result
     -Wno-unused-function
+    -Wno-old-style-cast
+    -Wno-cast-qual
 CLANG
     -Wno-format-pedantic
 GCC

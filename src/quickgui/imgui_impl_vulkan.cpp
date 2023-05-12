@@ -51,7 +51,7 @@
 //  2016-08-27: Vulkan: Fix Vulkan example for use when a depth buffer is active.
 
 #include "quickgui/mem.hpp"
-#include "imgui.h"
+#include "quickgui/imgui.hpp"
 #include "imgui_impl_vulkan.h"
 #include <stdio.h>
 
@@ -221,6 +221,10 @@ static uint32_t __glsl_shader_frag_spv[] =
 //-----------------------------------------------------------------------------
 // FUNCTIONS
 //-----------------------------------------------------------------------------
+
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
 
 static uint32_t ImGui_ImplVulkan_MemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
 {
@@ -1340,3 +1344,5 @@ void ImGui_ImplVulkanH_DestroyWindowRenderBuffers(VkDevice device, ImGui_ImplVul
     buffers->Index = 0;
     buffers->Count = 0;
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

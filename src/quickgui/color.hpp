@@ -7,6 +7,9 @@
 
 namespace quickgui {
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 struct ucolor;
 struct fcolor;
 
@@ -346,6 +349,8 @@ struct colors
 #undef _defcolor
 #undef _defcolor4
 };
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 } // namespace quickgui
 
