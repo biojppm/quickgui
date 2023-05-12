@@ -292,14 +292,6 @@ struct _irange
 {
     static_assert(std::is_integral_v<I>);
     using value_type = I;
-    I first, last;
-    C4_ALWAYS_INLINE _irange() noexcept {}
-    C4_ALWAYS_INLINE _irange(I first_, I last_) noexcept
-        : first(first_)
-        , last(last_)
-    {
-        C4_ASSERT(first <= last);
-    }
     struct iterator
     {
         I val;
@@ -311,8 +303,45 @@ struct _irange
         C4_ALWAYS_INLINE C4_PURE constexpr iterator operator+ (I more) const noexcept { return iterator{val + more}; }
         C4_ALWAYS_INLINE C4_PURE constexpr iterator operator- (I more) const noexcept { return iterator{val - more}; }
     };
+    I first, last;
+    C4_ALWAYS_INLINE _irange() noexcept = default;
+    C4_ALWAYS_INLINE _irange(I first_, I last_) noexcept
+        : first(first_)
+        , last(last_)
+    {
+        C4_ASSERT(first <= last);
+    }
     C4_ALWAYS_INLINE C4_PURE constexpr iterator begin() const noexcept { return {first}; }
     C4_ALWAYS_INLINE C4_PURE constexpr iterator end() const noexcept { return {last}; }
+};
+template<class I>
+struct _irange_step
+{
+    static_assert(std::is_integral_v<I>);
+    using value_type = I;
+    struct iterator
+    {
+        I val, step;
+        C4_ALWAYS_INLINE constexpr I operator++ () noexcept { return val += step; }
+        C4_ALWAYS_INLINE C4_PURE constexpr I operator* () const noexcept { return val; }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator!= (iterator const it) const noexcept { return val < it.val; }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator<  (iterator const it) const noexcept { return val < it.val; }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator>  (iterator const it) const noexcept { return val > it.val; }
+        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator+ (I more) const noexcept { return iterator{val + more}; }
+        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator- (I more) const noexcept { return iterator{val - more}; }
+    };
+    I first, last, step;
+    C4_ALWAYS_INLINE _irange_step() noexcept = default;
+    C4_ALWAYS_INLINE _irange_step(I first_, I last_, I step_) noexcept
+        : first(first_)
+        , last(last_)
+        , step(step_)
+    {
+        C4_ASSERT(first <= last);
+        C4_ASSERT(step > 0);
+    }
+    C4_ALWAYS_INLINE C4_PURE constexpr iterator begin() const noexcept { return {first, step}; }
+    C4_ALWAYS_INLINE C4_PURE constexpr iterator end() const noexcept { return {last, step}; }
 };
 } // namespace detail
 
@@ -330,13 +359,26 @@ C4_ALWAYS_INLINE C4_CONST constexpr auto irange(I first, I last) noexcept
 {
     return detail::_irange<I>(first, last);
 }
-//! integer range. version for containers.
-template<class T>
-C4_ALWAYS_INLINE C4_CONST constexpr auto irange(T const& C4_RESTRICT container) noexcept
-    -> typename std::enable_if<!std::is_integral_v<T>, detail::_irange<typename T::size_type>>::type
+//! integer range, from first to last, with step
+template<class I>
+C4_ALWAYS_INLINE C4_CONST constexpr auto irange(I first, I last, I step) noexcept
+    -> typename std::enable_if<std::is_integral_v<I>, detail::_irange_step<I>>::type
 {
-    using I = typename T::size_type;
+    return detail::_irange_step<I>(first, last, step);
+}
+//! integer range. version for containers.
+template<class T, class I=typename T::size_type>
+C4_ALWAYS_INLINE C4_CONST constexpr auto irange(T const& C4_RESTRICT container) noexcept
+    -> typename std::enable_if<!std::is_integral_v<T>, detail::_irange<I>>::type
+{
     return detail::_irange<I>(I(0), container.size());
+}
+//! integer range. version for containers, with step
+template<class T, class I=typename T::size_type>
+C4_ALWAYS_INLINE C4_CONST constexpr auto irange(T const& C4_RESTRICT container, I step) noexcept
+    -> typename std::enable_if<!std::is_integral_v<T>, detail::_irange_step<I>>::type
+{
+    return detail::_irange_step<I>(I(0), container.size(), step);
 }
 
 
