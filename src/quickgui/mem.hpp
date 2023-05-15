@@ -304,8 +304,8 @@ struct _irange
         C4_ALWAYS_INLINE C4_PURE constexpr iterator operator- (I more) const noexcept { return iterator{val - more}; }
     };
     I first, last;
-    C4_ALWAYS_INLINE _irange() noexcept = default;
-    C4_ALWAYS_INLINE _irange(I first_, I last_) noexcept
+    C4_ALWAYS_INLINE constexpr _irange() noexcept = default;
+    C4_ALWAYS_INLINE constexpr _irange(I first_, I last_) noexcept
         : first(first_)
         , last(last_)
     {
@@ -324,21 +324,21 @@ struct _irange_step
         I val, step;
         C4_ALWAYS_INLINE constexpr I operator++ () noexcept { return val += step; }
         C4_ALWAYS_INLINE C4_PURE constexpr I operator* () const noexcept { return val; }
-        C4_ALWAYS_INLINE C4_PURE constexpr bool operator!= (iterator const it) const noexcept { return val < it.val; }
-        C4_ALWAYS_INLINE C4_PURE constexpr bool operator<  (iterator const it) const noexcept { return val < it.val; }
-        C4_ALWAYS_INLINE C4_PURE constexpr bool operator>  (iterator const it) const noexcept { return val > it.val; }
-        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator+ (I more) const noexcept { return iterator{val + more}; }
-        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator- (I more) const noexcept { return iterator{val - more}; }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator!= (iterator const it) const noexcept { if constexpr (std::is_signed_v<I>) { bool gtlt[] = {val > it.val, val < it.val}; return gtlt[step > 0]; } else { return val < it.val; } }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator<  (iterator const it) const noexcept { if constexpr (std::is_signed_v<I>) { bool gtlt[] = {val > it.val, val < it.val}; return gtlt[step > 0]; } else { return val < it.val; } }
+        C4_ALWAYS_INLINE C4_PURE constexpr bool operator>  (iterator const it) const noexcept { if constexpr (std::is_signed_v<I>) { bool gtlt[] = {val > it.val, val < it.val}; return gtlt[step > 0]; } else { return val < it.val; } }
+        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator+ (I more) const noexcept { return iterator{val + more * step, step}; }
+        C4_ALWAYS_INLINE C4_PURE constexpr iterator operator- (I more) const noexcept { return iterator{val - more * step, step}; }
     };
     I first, last, step;
-    C4_ALWAYS_INLINE _irange_step() noexcept = default;
-    C4_ALWAYS_INLINE _irange_step(I first_, I last_, I step_) noexcept
+    C4_ALWAYS_INLINE constexpr _irange_step() noexcept = default;
+    C4_ALWAYS_INLINE constexpr _irange_step(I first_, I last_, I step_) noexcept
         : first(first_)
         , last(last_)
         , step(step_)
     {
-        C4_ASSERT(first <= last);
-        C4_ASSERT(step > 0);
+        C4_ASSERT(step != 0);
+        C4_ASSERT(first <= last || step < 0);
     }
     C4_ALWAYS_INLINE C4_PURE constexpr iterator begin() const noexcept { return {first, step}; }
     C4_ALWAYS_INLINE C4_PURE constexpr iterator end() const noexcept { return {last, step}; }
