@@ -15,7 +15,7 @@ struct PrimitiveDrawListMultithread
         size_t m_position;
     };
 
-    std::vector<DebugDrawList> m_thread_lists = {};
+    std::vector<PrimitiveDrawList> m_thread_lists = {};
     std::vector<PrimitiveData> m_primitive_data = {};
     std::atomic_size_t m_curr = 0;
 
@@ -34,12 +34,12 @@ struct PrimitiveDrawListMultithread
 
     void clear()
     {
-        for(DebugDrawList &thread_list : m_thread_lists)
+        for(PrimitiveDrawList &thread_list : m_thread_lists)
             thread_list.clear();
         m_curr = 0;
     }
 
-    DebugDrawList& _claim(size_t thread_id)
+    PrimitiveDrawList& _claim(size_t thread_id)
     {
         C4_CHECK(thread_id < m_thread_lists.size());
         size_t id = ++m_curr;
@@ -48,25 +48,25 @@ struct PrimitiveDrawListMultithread
         C4_CHECK_MSG(id < m_primitive_data.size(), "number of primitives to draw exceeds the limit: %zu > %zu", id, m_primitive_data.size());
         // in here we are safe:
         PrimitiveData &primitive_data = m_primitive_data[id];
-        DebugDrawList &thread_list = m_thread_lists[thread_id];
+        PrimitiveDrawList &thread_list = m_thread_lists[thread_id];
         primitive_data.m_thread = thread_id;
         primitive_data.m_position = thread_list.curr();
         return thread_list;
     }
 
-    DebugDrawList const& get_list(PrimitiveData const& pd) const
+    PrimitiveDrawList const& get_list(PrimitiveData const& pd) const
     {
         C4_ASSERT(pd.m_thread < m_thread_lists.size());
         return m_thread_lists[pd.m_thread];
     }
 
-    DebugDrawList & get_list(PrimitiveData const& pd)
+    PrimitiveDrawList & get_list(PrimitiveData const& pd)
     {
         C4_ASSERT(pd.m_thread < m_thread_lists.size());
         return m_thread_lists[pd.m_thread];
     }
 
-    DebugDrawList::Primitive const& get_prim(PrimitiveData const& pd) const
+    PrimitiveDrawList::Primitive const& get_prim(PrimitiveData const& pd) const
     {
         C4_ASSERT(pd.m_thread < m_thread_lists.size());
         C4_ASSERT(pd.m_position < m_thread_lists[pd.m_thread].m_primitives.size());
@@ -89,7 +89,6 @@ public:
     _C4_DEFINE_DRAW_FN(rect_filled)
     _C4_DEFINE_DRAW_FN(poly)
     _C4_DEFINE_DRAW_FN(circle)
-    _C4_DEFINE_DRAW_FN(ring_filled)
 
     #undef _C4_DEFINE_DRAW_FN
 };
