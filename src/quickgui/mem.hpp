@@ -75,7 +75,7 @@ inline constexpr const size_t chunkelms_v = chunkbytes / sizeof(T);
 } // namespace quickgui::simd
 
 
-#define QUICKGUI_CACHE_PAD(T, var)                                         \
+#define QUICKGUI_CACHE_PAD(T, var)                                    \
     T var;                                                            \
     char C4_XCAT(___pad___, __LINE__)[c4::mult_remainder(sizeof(T), QUICKGUI_L1_CACHE_LINE_SIZE)];
 

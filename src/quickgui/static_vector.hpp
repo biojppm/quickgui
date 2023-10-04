@@ -336,21 +336,21 @@ C4_SUPPRESS_WARNING_MSVC(4626)  // assignment operator was implicitly defined as
  * @warning does not construct or destroy */
 struct reusable_buffer
 {
-    fixed_vector<char> mem = {1024};
+    fixed_vector<uint8_t> mem = {1024};
     template<class T>
-    T *reset(size_t num=1)
+    T *reset(size_t num=1, size_t align=alignof(T)) { return (T*) reset(num, sizeof(T), align); }
+    void *reset(size_t num_obj, size_t sz_obj, size_t align_obj)
     {
         C4_ASSERT(mem.data() != nullptr);
         uintptr_t start = (uintptr_t)mem.data();
-        uintptr_t aligned = quickgui::next_multiple(start, alignof(T));
-        size_t sz = (aligned - start) + num * sizeof(T);
+        uintptr_t aligned = quickgui::next_multiple(start, sz_obj);
+        size_t sz = (aligned - start) + num_obj * sz_obj;
         if(mem.size() < sz)
             mem.reset(2 * mem.size() < sz ? 2 * mem.size() : sz);
         memset(mem.data(), 0, mem.size());
         start = (uintptr_t)mem.data();
-        aligned = quickgui::next_multiple(start, alignof(T));
-        auto ptr = QUICKGUI_ASSUME_ALIGNED_TO(T*, mem.data() + (aligned - start), alignof(T));
-        return ptr;
+        aligned = quickgui::next_multiple(start, align_obj);
+        return (void*)(mem.data() + (aligned - start));
     }
 };
 C4_SUPPRESS_WARNING_MSVC_POP
