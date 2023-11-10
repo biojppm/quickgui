@@ -74,16 +74,18 @@ wimgview load_bmp(void * bmp_buf_, uint32_t bmp_buf_sz)
         color_header = (BMPColorHeader const*)(bmp_buf + sizeof(BMPFileHeader) + sizeof(BMPInfoHeader));
         (void)color_header;
     }
-    C4_CHECK(info_header->height > 0);
+    uint32_t height = (uint32_t)(info_header->height > 0 ? info_header->height : -info_header->height);
     wimgview v = make_wimgview(
         /*buf*/bmp_buf + file_header->offset_data,
         /*bufsz*/(uint32_t)(bmp_buf_sz - (size_t)file_header->offset_data),
         /*width*/(uint32_t)info_header->width,
-        /*height*/(uint32_t)info_header->height,
+        /*height*/(uint32_t)height,
         /*num_channels*/info_header->bit_count / 8u,
         /*data_type*/imgviewtype::u8);
     // remove any padding at the end of the rows
     C4_ASSERT((v.width & 3) == 0);
+    if(info_header->height < 0)
+        vflip(v);
     return v;
 }
 
@@ -229,6 +231,29 @@ void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
         T const* C4_RESTRICT src_row = src_buf +          h  * N;
         T      * C4_RESTRICT dst_row = dst_buf + (H - 1 - h) * N;
         memcpy(dst_row, src_row, sN);
+    }
+}
+
+void vflip(wimgview & C4_RESTRICT dst) noexcept
+{
+    C4_CHECK(dst.data_type == imgviewtype::u8);
+    using T = uint8_t;
+    using I = int32_t; // using signed indices for faster iteration
+    const I H = (I)dst.height;
+    const I W = (I)dst.height;
+    const I N = (I)dst.width * (I)dst.num_channels * (I)dst.data_type_size();
+    const uint32_t sN = (uint32_t)N;
+    T* C4_RESTRICT dst_buf = (T*) dst.buf;
+    for(I h = 0; h < H; ++h)
+    {
+        T * C4_RESTRICT src_row = dst_buf +          h  * N;
+        T * C4_RESTRICT dst_row = dst_buf + (H - 1 - h) * N;
+        for(I w = 0; w < W; ++w)
+        {
+            uint8_t tmp = src_row[w];
+            src_row[w] = dst_row[w];
+            dst_row[w] = tmp;
+        }
     }
 }
 

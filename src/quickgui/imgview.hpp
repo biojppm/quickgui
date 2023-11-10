@@ -312,6 +312,7 @@ wimgview load_bmp(void *buf, uint32_t bufsz);
 uint32_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_sz);
 
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+void vflip(wimgview & C4_RESTRICT img) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 
 C4_SUPPRESS_WARNING_GCC_CLANG_POP
