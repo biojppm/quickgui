@@ -13,6 +13,9 @@ C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 struct ucolor;
 struct fcolor;
 
+struct ucolor3;
+struct fcolor3;
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -54,6 +57,37 @@ struct fcolor
     }
 };
 
+struct fcolor3
+{
+    using value_type = float;
+    float r, g, b;
+    fcolor3() noexcept = default;
+    explicit fcolor3(uint32_t c) noexcept : r(), g(), b() { set(c); }
+    constexpr explicit fcolor3(float r_, float g_, float b_) noexcept : r(r_), g(g_), b(b_) {}
+    constexpr explicit fcolor3(uint8_t r_, uint8_t g_, uint8_t b_) noexcept : r(r_ / 255.f), g(g_ / 255.f), b(b_ / 255.f) {}
+    explicit fcolor3(ucolor3 c) noexcept;
+    fcolor3& operator=(uint32_t c) noexcept { set(c); return *this; }
+    operator ucolor3() const noexcept;
+    operator uint32_t() const noexcept
+    {
+        return uint32_t(r * 255.f)
+            | (uint32_t(g * 255.f) << 8)
+            | (uint32_t(b * 255.f) << 16);
+    }
+    void set(uint32_t c) noexcept
+    {
+        r = float((c & UINT32_C(0x00'00'00'ff))      ) / 255.f;
+        g = float((c & UINT32_C(0x00'00'ff'00)) >>  8) / 255.f;
+        b = float((c & UINT32_C(0x00'ff'00'00)) >> 16) / 255.f;
+    }
+    void clamp() noexcept
+    {
+        r = clamp01(r);
+        g = clamp01(g);
+        b = clamp01(b);
+    }
+};
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -91,6 +125,34 @@ struct ucolor
     }
 };
 
+struct ucolor3
+{
+    using value_type = uint8_t;
+    uint8_t r, g, b;
+    operator fcolor3() const noexcept;
+    explicit ucolor3(fcolor3 c) noexcept;
+    explicit ucolor3() noexcept : r(), g(), b() {};
+    constexpr explicit ucolor3(uint8_t r_, uint8_t g_, uint8_t b_) noexcept : r(r_), g(g_), b(b_) {}
+    ucolor3& operator=(uint32_t c) noexcept { set(c); return *this; }
+    constexpr explicit ucolor3(uint32_t c) noexcept
+        : r(uint8_t((c & UINT32_C(0x00'00'00'ff))      ))
+        , g(uint8_t((c & UINT32_C(0x00'00'ff'00)) >>  8))
+        , b(uint8_t((c & UINT32_C(0x00'ff'00'00)) >> 16))
+    {}
+    void set(uint32_t c) noexcept
+    {
+        r = uint8_t((c & UINT32_C(0x00'00'00'ff))      );
+        g = uint8_t((c & UINT32_C(0x00'00'ff'00)) >>  8);
+        b = uint8_t((c & UINT32_C(0x00'ff'00'00)) >> 16);
+    }
+    operator uint32_t() const noexcept
+    {
+        return uint32_t(r)
+            | (uint32_t(g) << 8)
+            | (uint32_t(b) << 16);
+    }
+};
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -100,6 +162,11 @@ C4_CONST C4_ALWAYS_INLINE fcolor tof(ucolor c) noexcept
 {
     return fcolor(c.r, c.g, c.b, c.a);
 }
+C4_CONST C4_ALWAYS_INLINE fcolor3 tof(ucolor3 c) noexcept
+{
+    return fcolor3(c.r, c.g, c.b);
+}
+
 C4_CONST C4_ALWAYS_INLINE ucolor tou(fcolor c) noexcept
 {
     return ucolor(
@@ -107,6 +174,13 @@ C4_CONST C4_ALWAYS_INLINE ucolor tou(fcolor c) noexcept
         uint8_t(c.g * 255.f),
         uint8_t(c.b * 255.f),
         uint8_t(c.a * 255.f));
+}
+C4_CONST C4_ALWAYS_INLINE ucolor3 tou(fcolor3 c) noexcept
+{
+    return ucolor3(
+        uint8_t(c.r * 255.f),
+        uint8_t(c.g * 255.f),
+        uint8_t(c.b * 255.f));
 }
 
 
@@ -116,13 +190,26 @@ inline fcolor::fcolor(ucolor c) noexcept : fcolor(tof(c))
 inline ucolor::ucolor(fcolor c) noexcept : ucolor(tou(c))
 {
 }
-
+inline fcolor3::fcolor3(ucolor3 c) noexcept : fcolor3(tof(c))
+{
+}
+inline ucolor3::ucolor3(fcolor3 c) noexcept : ucolor3(tou(c))
+{
+}
 
 inline fcolor::operator ucolor() const noexcept
 {
     return tou(*this);
 }
 inline ucolor::operator fcolor() const noexcept
+{
+    return tof(*this);
+}
+inline fcolor3::operator ucolor3() const noexcept
+{
+    return tou(*this);
+}
+inline ucolor3::operator fcolor3() const noexcept
 {
     return tof(*this);
 }
@@ -145,6 +232,16 @@ C4_CONST C4_ALWAYS_INLINE ucolor alpha(fcolor c, float alpha)
 }
 
 C4_CONST C4_ALWAYS_INLINE fcolor clamp(fcolor ret)
+{
+    ret.r = ret.r > 0.f ? ret.r : 0.f;
+    ret.g = ret.g > 0.f ? ret.g : 0.f;
+    ret.b = ret.b > 0.f ? ret.b : 0.f;
+    ret.r = ret.r < 1.f ? ret.r : 1.f;
+    ret.g = ret.g < 1.f ? ret.g : 1.f;
+    ret.b = ret.b < 1.f ? ret.b : 1.f;
+    return ret;
+}
+C4_CONST C4_ALWAYS_INLINE fcolor3 clamp(fcolor3 ret)
 {
     ret.r = ret.r > 0.f ? ret.r : 0.f;
     ret.g = ret.g > 0.f ? ret.g : 0.f;

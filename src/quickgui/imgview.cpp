@@ -55,7 +55,7 @@ struct BMPColorHeader
 } // anon namespace
 
 
-wimgview load_bmp(void * bmp_buf_, size_t bmp_buf_sz)
+wimgview load_bmp(void * bmp_buf_, uint32_t bmp_buf_sz)
 {
     char *C4_RESTRICT bmp_buf = (char *)bmp_buf_;
     BMPFileHeader const* C4_RESTRICT file_header = (BMPFileHeader const*)(bmp_buf);
