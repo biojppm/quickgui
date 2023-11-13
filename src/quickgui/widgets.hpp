@@ -67,19 +67,31 @@ struct FilePicker
     /// @p file_filter can be something like ".png;.jpg;.jpeg;.bmp;.tga;.gif;.tiff;.txt". It's case insensitive.
     const char *pick_file(const char* btn_txt="Select", const char *file_filter="", const char *window_title="Select")
     {
+        return pick_file_(dialog.getLastDirectory(), btn_txt, file_filter, window_title);
+    }
+    const char *pick_file_(const char *directory, const char* btn_txt="Select", const char *file_filter="", const char *window_title="Select")
+    {
         bool open = ImGui::Button(btn_txt);
         set_hover_tooltip("Click to select");
-        const char *path = dialog.chooseFileDialog(open, dialog.getLastDirectory(), file_filter, window_title);
+        const char *path = dialog.chooseFileDialog(open, directory, file_filter, window_title);
         if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
             return nullptr;
         return path;
     }
-    /// @p file_filter can be something like ".png;.jpg;.jpeg;.bmp;.tga;.gif;.tiff;.txt". It's case insensitive.
     const char *pick_dir(const char* btn_txt="Select")
     {
         bool open = ImGui::Button(btn_txt);
         set_hover_tooltip("Click to select");
-        const char *path = dialog.chooseFolderDialog(open);
+        const char *path = dialog.chooseFolderDialog(open, dialog.getLastDirectory());
+        if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
+            return nullptr;
+        return path;
+    }
+    const char *pick_dir_(const char *directory, const char* btn_txt="Select")
+    {
+        bool open = ImGui::Button(btn_txt);
+        set_hover_tooltip("Click to select");
+        const char *path = dialog.chooseFolderDialog(open, directory);
         if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
             return nullptr;
         return path;
