@@ -358,6 +358,7 @@ struct UploadBuffer
 
     void destroy();
     void destroy(Rhi &rhi);
+    void clear() { m_pos = 0; }
     [[nodiscard]] VkDeviceSize require(Rhi &rhi, VkDeviceSize num_bytes);
     [[nodiscard]] VkDeviceSize add(Rhi &rhi, void const *mem, VkDeviceSize sz);
 };
