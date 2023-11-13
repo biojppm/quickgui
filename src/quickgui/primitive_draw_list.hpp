@@ -73,6 +73,11 @@ public:
         return m_primitives.size();
     }
 
+    bool empty() const
+    {
+        return m_primitives.empty();
+    }
+
 public:
 
     void draw_text(c4::csubstr txt, ImVec2 p, ucolor color, float thickness) noexcept
