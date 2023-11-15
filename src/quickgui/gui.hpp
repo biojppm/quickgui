@@ -23,6 +23,7 @@ struct GuiConfig
     uint32_t    window_height;
     uint32_t    clear_color; // input
     bool        debug_vulkan;
+    float       font_scale;
 };
 
 

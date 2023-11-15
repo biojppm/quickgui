@@ -317,7 +317,7 @@ bool gui_init(GuiConfig const& cfg)
     int window_height = cfg.window_height ? (int)cfg.window_height :  720;
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        window_width, window_height, window_flags);
+                                window_width, window_height, window_flags);
 
     // Setup Vulkan
     reusable_buffer buf;

@@ -212,15 +212,21 @@ void demo(WidgetState *st)
     if(!st->show_demo_window)
         return;
     ImGui::Begin("Demos", &st->show_demo_window);
+    ImGui::Text("%.1f ms/frame (%.1f FPS)",
+                (double)(1000.f / ImGui::GetIO().Framerate),
+                (double)ImGui::GetIO().Framerate);
     ImGui::Checkbox("Vulkan Widget", &st->show_vulkan_window);
     #ifdef QUICKGUI_WITH_DEMOS
     ImGui::Checkbox("Imgui demo Widget", &st->show_demo_widget);
     ImGui::Checkbox("Implot demo Widget", &st->show_plot_demo_widget);
     #endif
+    ImGuiIO& io = ImGui::GetIO();
+    const float MIN_SCALE = 0.3f;
+    const float MAX_SCALE = 2.0f;
+    ImGui::PushItemWidth(ImGui::GetFontSize() * 8);
+    ImGui::DragFloat("Font scale", &io.FontGlobalScale, 0.005f, MIN_SCALE, MAX_SCALE, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::PopItemWidth();
     ImGui::ColorEdit3("Clear color", (float*)&st->clear_color);
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                (double)(1000.f / ImGui::GetIO().Framerate),
-                (double)ImGui::GetIO().Framerate);
     #ifdef QUICKGUI_WITH_DEMOS
     if(st->show_demo_widget)
         ImGui::ShowDemoWindow(&st->show_demo_widget);
