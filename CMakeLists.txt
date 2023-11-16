@@ -44,8 +44,8 @@ c4_add_library(quickgui
         src/quickgui/gui.cpp
         src/quickgui/gui.hpp
         src/quickgui/imgui.hpp
-        src/quickgui/imgui_impl_sdl.cpp
-        src/quickgui/imgui_impl_sdl.h
+        src/quickgui/imgui_impl_sdl2.cpp
+        src/quickgui/imgui_impl_sdl2.h
         src/quickgui/imgui_impl_vulkan.cpp
         src/quickgui/imgui_impl_vulkan.h
         src/quickgui/imgview.cpp

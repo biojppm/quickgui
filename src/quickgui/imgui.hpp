@@ -37,6 +37,10 @@ C4_SUPPRESS_WARNING_MSVC(5219) // implicit conversion from 'int' to 'float', pos
 #include "imguifilesystem.h"
 #undef IMGUIFS_NO_EXTRA_METHODS
 
+C4_SUPPRESS_WARNING_MSVC_POP
+C4_SUPPRESS_WARNING_CLANG_POP
+C4_SUPPRESS_WARNING_GCC_POP
+
 #define QUICKGUI_DEFINE_IMVEC_OPERATOR(op)                                   \
 C4_ALWAYS_INLINE C4_CONST ImVec2& operator op##= (ImVec2 &lhs, float rhs) noexcept { lhs.x += rhs; lhs.y += rhs; return lhs; } \
 C4_ALWAYS_INLINE C4_CONST ImVec2  operator op (ImVec2 lhs, float rhs) noexcept { return ImVec2{lhs.x op rhs, lhs.y op rhs}; } \
@@ -50,15 +54,11 @@ QUICKGUI_DEFINE_IMVEC_OPERATOR(/)
 
 C4_ALWAYS_INLINE C4_CONST float  dot(ImVec2 lhs, ImVec2 rhs) noexcept { return lhs.x * rhs.x + lhs.y * rhs.y; }
 C4_ALWAYS_INLINE C4_CONST float  dot(ImVec2 vec) noexcept { return vec.x * vec.x + vec.y * vec.y; }
-C4_ALWAYS_INLINE C4_CONST float  norm(ImVec2 vec) noexcept { return sqrt(vec.x * vec.x + vec.y * vec.y); }
-C4_ALWAYS_INLINE C4_CONST float  rnorm(ImVec2 vec) noexcept { return 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); }
-C4_ALWAYS_INLINE C4_CONST ImVec2 versor(ImVec2 vec) noexcept { float rs = 1.f / sqrt(vec.x * vec.x + vec.y * vec.y); return ImVec2{vec.x * rs, vec.y * rs}; }
+C4_ALWAYS_INLINE C4_CONST float  norm(ImVec2 vec) noexcept { return sqrtf(vec.x * vec.x + vec.y * vec.y); }
+C4_ALWAYS_INLINE C4_CONST float  rnorm(ImVec2 vec) noexcept { return 1.f / sqrtf(vec.x * vec.x + vec.y * vec.y); }
+C4_ALWAYS_INLINE C4_CONST ImVec2 versor(ImVec2 vec) noexcept { float rs = 1.f / sqrtf(vec.x * vec.x + vec.y * vec.y); return ImVec2{vec.x * rs, vec.y * rs}; }
 C4_ALWAYS_INLINE C4_CONST float  maxof(ImVec2 vec) noexcept { return vec.x > vec.y ? vec.x : vec.y; }
 C4_ALWAYS_INLINE C4_CONST float  minof(ImVec2 vec) noexcept { return vec.x < vec.y ? vec.x : vec.y; }
-
-C4_SUPPRESS_WARNING_MSVC_POP
-C4_SUPPRESS_WARNING_CLANG_POP
-C4_SUPPRESS_WARNING_GCC_POP
 
 
 #endif /* QUICKGUI_GUI_IMGUI_HPP_ */

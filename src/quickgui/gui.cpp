@@ -1,6 +1,6 @@
 
 #include "quickgui/gui.hpp"
-#include "quickgui/imgui_impl_sdl.h"
+#include "quickgui/imgui_impl_sdl2.h"
 #include "quickgui/imgui_impl_vulkan.h"
 #include "quickgui/static_vector.hpp"
 #include "quickgui/stb_image_data.hpp"

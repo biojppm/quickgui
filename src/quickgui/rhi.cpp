@@ -3,7 +3,7 @@
 #include "quickgui/mem.hpp"
 #include "quickgui/math.hpp"
 #include "quickgui/log.hpp"
-#include "imgui_impl_sdl.h"
+#include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 
 #include <c4/format.hpp>
