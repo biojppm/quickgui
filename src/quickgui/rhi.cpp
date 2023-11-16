@@ -370,6 +370,8 @@ bool FrameStart(ImGui_ImplVulkanH_Window *wd)
         needs_rebuild = true;
     else if(err != VK_TIMEOUT)
         C4_CHECK_VK(err);
+    else
+        QUICKGUI_LOGF("FrameStart(): timeout!");
 
     C4_ASSERT(wd->FrameIndex < wd->ImageCount);
     ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
