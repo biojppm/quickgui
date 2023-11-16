@@ -240,9 +240,15 @@ void events(WidgetState *st)
 {
     quickgui::gui_iter_events([](SDL_Event const& event, void *data){
         auto *wst = (WidgetState*)data;
+        #if SDL_MAJOR_VERSION == 3
+        if(event.type == SDL_EVENT_KEY_DOWN)
+        {
+            #define _TOGGLE_ON_CTRL(key, var) SDLK_##key: { if(SDL_GetModState() & (SDL_KMOD_LCTRL|SDL_KMOD_RCTRL)) { (var) = !(var); return true; } } break
+        #else
         if(event.type == SDL_KEYDOWN)
         {
             #define _TOGGLE_ON_CTRL(key, var) SDLK_##key: { if(SDL_GetModState() & (KMOD_LCTRL|KMOD_RCTRL)) { (var) = !(var); return true; } } break
+        #endif
             switch(event.key.keysym.sym)
             {
             case _TOGGLE_ON_CTRL(d, wst->show_demo_window);

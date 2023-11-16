@@ -43,7 +43,11 @@ extern bool                     g_SwapChainRebuild;
 
 SDL_Window              *g_window = nullptr;
 bool                     g_window_full_screen = false;
+#if SDL_MAJOR_VERSION == 3
+const SDL_DisplayMode*   g_window_display_mode = {};
+#else
 SDL_DisplayMode          g_window_display_mode = {};
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -219,12 +223,22 @@ void set_full_screen(SDL_Window *window, bool value)
 {
     if(value)
     {
+        #if SDL_MAJOR_VERSION == 3
+        SDL_DisplayMode const* screen_display_mode = {};
+        int curr_display = SDL_GetDisplayForWindow(window);
+        g_window_display_mode = SDL_GetCurrentDisplayMode(curr_display);
+        screen_display_mode = SDL_GetDesktopDisplayMode(curr_display);
+        // TODO
+        SDL_SetWindowDisplayMode(window, &screen_display_mode);
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+        #else
         SDL_DisplayMode screen_display_mode = {};
         int curr_display = SDL_GetWindowDisplayIndex(window);
         SDL_GetCurrentDisplayMode(curr_display, &g_window_display_mode);
         SDL_GetDesktopDisplayMode(curr_display, &screen_display_mode);
         SDL_SetWindowDisplayMode(window, &screen_display_mode);
         SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+        #endif
     }
     else
     {
