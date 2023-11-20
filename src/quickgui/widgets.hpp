@@ -18,6 +18,7 @@ C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 inline void hspace(float px) { ImGui::Dummy(ImVec2(px, 0.f)); }
 inline void vspace(float px) { ImGui::Dummy(ImVec2(0.f, px)); }
+inline void space(ImVec2 px) { ImGui::Dummy(px); }
 
 void push_disabled();
 void pop_disabled();
