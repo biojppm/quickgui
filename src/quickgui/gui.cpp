@@ -444,7 +444,7 @@ void gui_acquire_assets()
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
-    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+    ImGui_ImplVulkan_CreateFontsTexture();
 
     g_gui_assets.acquire(command_buffer);
 
@@ -467,7 +467,6 @@ void gui_acquire_assets()
     C4_CHECK_VK(vkQueueSubmit(g_Queue, 1, &end_info, VK_NULL_HANDLE));
 
     C4_CHECK_VK(vkDeviceWaitIdle(g_Device));
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 
