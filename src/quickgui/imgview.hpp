@@ -311,6 +311,37 @@ wimgview make_wimgview(CharContainer *container, uint32_t width, uint32_t height
 wimgview load_bmp(void *buf, uint32_t bufsz);
 uint32_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_sz);
 
+template<class CharContainer>
+void save_bmp(CharContainer *container, imgview const& C4_RESTRICT v)
+{
+    static_assert(sizeof(typename CharContainer::value_type) == 1u);
+    uint32_t bytes_required = save_bmp(v, container->data(), container->size());
+    if(bytes_required < container->size())
+    {
+        container->resize(bytes_required);
+    }
+    else
+    {
+        container->resize(bytes_required);
+        bytes_required = save_bmp(v, container->data(), container->size());
+        C4_ASSERT(bytes_required <= container->size());
+    }
+}
+
+template<class CharContainer>
+void save_bmp(imgview const& C4_RESTRICT v)
+{
+    CharContainer c;
+    c.resize(v.bytes_required() + 1024);
+    save_bmp(&c, v);
+    return c;
+}
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void vflip(wimgview & C4_RESTRICT img) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
