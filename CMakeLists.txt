@@ -35,6 +35,28 @@ if(QUICKGUI_USE_FLATBUFFERS)
     include(./ext/flatbuffers.cmake)
 endif()
 
+function(qg_compile_and_include_shader_u32 target infile outfile)
+    find_program(GLSLANG_VALIDATOR glslangValidator REQUIRED)
+    if(NOT DEFINED)
+        set(GLSL_VALIDATOR_OPTIONS "" CACHE STRING "options to pass to glslang validator when computing shaders")
+    endif()
+    get_filename_component(full_infile "${infile}" ABSOLUTE)
+    add_custom_command(OUTPUT ${outfile}
+        COMMAND ${GLSLANG_VALIDATOR} -V -x -o ${outfile} ${GLSL_VALIDATOR_OPTIONS} ${full_infile}
+        DEPENDS ${infile}
+        COMMENT "compiling ${infile}"
+    )
+    target_sources(${target} PRIVATE ${outfile})
+endfunction()
+
+function(qg_compile_and_include_shaders_u32 target)
+    foreach(infile ${ARGN})
+        get_filename_component(full_infile "${infile}" ABSOLUTE)
+        set(outfile "${full_infile}.spv")
+        qg_compile_and_include_shader_u32(${target} "${infile}" "${outfile}")
+    endforeach()
+endfunction()
+
 
 #-------------------------------------------------------
 
@@ -74,8 +96,10 @@ c4_add_library(quickgui
         src/quickgui/widgets.cpp
         src/quickgui/widgets.hpp
     INC_DIRS
-        $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}> $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
-        $<BUILD_INTERFACE:${Vulkan_INCLUDE_DIR}> $<BUILD_INTERFACE:${Vulkan_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}>
+        $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
+        $<BUILD_INTERFACE:${Vulkan_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:${Vulkan_INCLUDE_DIR}>
     PUBLIC_DEFS
         $<$<BOOL:${QUICKGUI_VULKAN_DEBUG}>:QGUI_ENABLE_VULKAN_DEBUG>
     LIBS
@@ -84,7 +108,12 @@ c4_add_library(quickgui
         imgui
         ${QUICKGUI_SDL}
         ${Vulkan_LIBRARY}
-        )
+    )
+
+qg_compile_and_include_shaders_u32(quickgui
+    src/quickgui/shaders/imgui.vert.glsl
+    src/quickgui/shaders/imgui.frag.glsl
+)
 
 
 if(QUICKGUI_USE_OPENCV)
@@ -93,7 +122,8 @@ if(QUICKGUI_USE_OPENCV)
             src/quickgui/cvutil/cvutil.hpp
             src/quickgui/cvutil/cvutil.cpp
         INC_DIRS
-            $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}> $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
+            $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}>
+            $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
         PUBLIC_DEFS
             QUICKGUI_USE_CV
         LIBS
@@ -111,7 +141,8 @@ if(QUICKGUI_VIDEO_ENABLED)
             src/quickgui/video/video_reader.cpp
             src/quickgui/video/video_source.hpp
         INC_DIRS
-            $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}> $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
+            $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}>
+            $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
         LIBS
             quickgui
             $<$<BOOL:${QUICKGUI_USE_OPENCV}>:quickgui-cvutil>
