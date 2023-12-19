@@ -9,6 +9,7 @@
 C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
 C4_SUPPRESS_WARNING_CLANG("-Wcast-align")
 C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 
 namespace quickgui {
 
@@ -241,11 +242,11 @@ void vflip(wimgview & C4_RESTRICT dst) noexcept
     using T = uint8_t;
     using I = int32_t; // using signed indices for faster iteration
     const I H = (I)dst.height;
+    const I H2 = (I)H/(I)2;
     const I W = (I)dst.width;
-    const I N = (I)dst.width * (I)dst.num_channels * (I)dst.data_type_size();
-    const uint32_t sN = (uint32_t)N;
+    const I N = W * (I)dst.num_channels * (I)dst.data_type_size();
     T* C4_RESTRICT dst_buf = (T*) dst.buf;
-    for(I h = 0; h < H/2; ++h)
+    for(I h = 0; h < H2; ++h)
     {
         T * C4_RESTRICT src_row = dst_buf +          h  * N;
         T * C4_RESTRICT dst_row = dst_buf + (H - 1 - h) * N;

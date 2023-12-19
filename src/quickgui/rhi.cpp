@@ -1071,7 +1071,7 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
 void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, VkCommandBuffer cmdbuf, UploadBuffer *upload_buffer, VkDeviceSize upload_buffer_offset)
 {
     auto &img = get_image(id);
-    C4_ASSERT(data.size() == layout.num_bytes());
+    C4_ASSERT(data.size() == layout.num_bytes());C4_UNUSED(data);
     // copy the staging buffer to the image, ensuring synchronization
     VkBufferImageCopy region = {};
     // see https://stackoverflow.com/questions/46501832/vulkan-vkbufferimagecopy-for-partial-transfer

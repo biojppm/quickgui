@@ -82,8 +82,10 @@
 
 
 C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wconversion")
 
 // Clang warnings with -Weverything
 #if defined(__clang__)

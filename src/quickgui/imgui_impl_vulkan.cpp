@@ -76,9 +76,17 @@
 
 #include "quickgui/mem.hpp"
 #include "quickgui/imgui.hpp"
+
 #ifndef IMGUI_DISABLE
 #include "imgui_impl_vulkan.h"
 #include <stdio.h>
+
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wsign-conversion")
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wconversion")
+C4_SUPPRESS_WARNING_GCC("-Wuseless-cast")
 
 // Visual Studio warnings
 #ifdef _MSC_VER
@@ -138,8 +146,6 @@ struct ImGui_ImplVulkan_Data
         BufferMemoryAlignment = 256;
     }
 };
-static VkDeviceMemory           g_UploadBufferMemory = VK_NULL_HANDLE;
-static VkBuffer                 g_UploadBuffer = VK_NULL_HANDLE;
 
 // Forward Declarations
 bool ImGui_ImplVulkan_CreateDeviceObjects();
@@ -260,10 +266,6 @@ static uint32_t __glsl_shader_frag_spv[] =
 //-----------------------------------------------------------------------------
 // FUNCTIONS
 //-----------------------------------------------------------------------------
-
-C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
-C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
-C4_SUPPRESS_WARNING_GCC_CLANG("-Wcast-qual")
 
 // Backend data stored in io.BackendRendererUserData to allow support for multiple Dear ImGui contexts
 // It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple windows) instead of multiple Dear ImGui contexts.

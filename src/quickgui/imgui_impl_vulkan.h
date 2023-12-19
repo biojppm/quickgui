@@ -28,6 +28,7 @@
 
 #pragma once
 #ifndef IMGUI_DISABLE
+#include <c4/error.hpp>
 #include "imgui.h"      // IMGUI_IMPL_API
 
 // [Configuration] in order to use a custom Vulkan function loader:
@@ -162,9 +163,13 @@ struct ImGui_ImplVulkanH_Window
 
     ImGui_ImplVulkanH_Window()
     {
+        C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+        C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+        C4_SUPPRESS_WARNING_GCC_CLANG("-Wconversion")
         memset((void*)this, 0, sizeof(*this));
         PresentMode = (VkPresentModeKHR)~0;     // Ensure we get an error if user doesn't set this.
         ClearEnable = true;
+        C4_SUPPRESS_WARNING_GCC_CLANG_POP
     }
 };
 
