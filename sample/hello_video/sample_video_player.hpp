@@ -8,6 +8,9 @@
 #include <quickgui/video/video_frame.hpp>
 #include "./sample_video_reader.hpp"
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 struct SampleVideoPlayer
 {
     static inline constexpr const uint32_t num_entries = quickgui::DynamicImage::RhiImage::num_entries;
@@ -255,5 +258,6 @@ struct SampleVideoPlayer
     }
 };
 
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 #endif /* VIDEO_PLAYER_GUI_HPP_ */

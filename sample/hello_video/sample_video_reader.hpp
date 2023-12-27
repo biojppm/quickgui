@@ -11,21 +11,25 @@
 using charspan = c4::span<char>;
 #include <c4/fs/fs.hpp>
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 /// an owning image buffer
 struct imgviewbuf
 {
-    std::vector<char> m_buf;
-    quickgui::imgview m_quickgui;
+    using buffer_type = std::remove_const_t<typename quickgui::imgview::buffer_type>;
+    std::vector<buffer_type> m_buf;
+    quickgui::wimgview m_quickgui;
 
     imgviewbuf() = default;
     bool empty() const { return m_buf.empty(); }
-    void reset(quickgui::imgview const& view)
+    void reset(quickgui::wimgview const& view)
     {
-        m_buf.resize(view.size_bytes);
+        m_buf.resize(view.bytes_required());
         m_quickgui = view;
         m_quickgui.buf = m_buf.data();
-        m_quickgui.buf_size = m_buf.size();
+        m_quickgui.buf_size = (uint32_t)m_buf.size();
+        static_assert(sizeof(m_quickgui.buf[0]) == sizeof(m_buf[0]));
     }
 };
 
@@ -126,35 +130,37 @@ struct SampleVideoReader
 
     void copy_to_display_buffer(charspan mem)
     {
-        C4_ASSERT(mem.size() >= m_vframe_4ch_vflip.m_quickgui.size_bytes);
-        memcpy(mem.data(), m_vframe_4ch_vflip.m_quickgui.buf, m_vframe_4ch_vflip.m_quickgui.size_bytes);
+        C4_ASSERT(mem.size() >= m_vframe_4ch_vflip.m_quickgui.bytes_required());
+        memcpy(mem.data(), m_vframe_4ch_vflip.m_quickgui.buf, m_vframe_4ch_vflip.m_quickgui.bytes_required());
     }
 
     void convert_channels()
     {
         if(m_reader.num_channels() == 1)
         {
-            if(m_vframe_3ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_3ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_1ch_vflip, m_vframe_3ch_vflip);
-            if(m_vframe_4ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_4ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_1ch_vflip, m_vframe_4ch_vflip);
         }
         else if(m_reader.num_channels() == 3)
         {
-            if(m_vframe_1ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_1ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_3ch_vflip, m_vframe_1ch_vflip);
-            if(m_vframe_4ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_4ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_3ch_vflip, m_vframe_4ch_vflip);
         }
         else if(m_reader.num_channels() == 4)
         {
-            if(m_vframe_3ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_3ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_4ch_vflip, m_vframe_3ch_vflip);
-            if(m_vframe_1ch_vflip.m_quickgui.size_bytes)
+            if(m_vframe_1ch_vflip.m_quickgui.bytes_required())
                 convert(m_vframe_4ch_vflip, m_vframe_1ch_vflip);
         }
     }
 
 };
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 #endif /* QUICKGUI_VIDEO_READER_H_ */

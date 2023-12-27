@@ -87,6 +87,7 @@ GCC_CLANG
     -Wno-cast-qual
 CLANG
     -Wno-format-pedantic
+    -Wno-cast-align
 GCC
     -Wno-useless-cast
     -Wno-stringop-truncation

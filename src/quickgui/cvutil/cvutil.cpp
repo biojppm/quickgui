@@ -1,10 +1,13 @@
 #include "quickgui/cvutil/cvutil.hpp"
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 namespace quickgui {
 
 namespace {
 static inline constexpr cvtypespecs cvtypes[] = {
-    #define _(ty, dt, nc) cvtypespecs{ty, imgview::data_##dt, nc, #ty}
+    #define _(ty, dt, nc) cvtypespecs{ty, imgviewtype::dt, nc, #ty}
         _(CV_8U   , u8, 1),
         _(CV_8UC1 , u8, 1),
         _(CV_8UC2 , u8, 2),
@@ -60,7 +63,7 @@ c4::csubstr cvtype_str(int cvtypeint)
 size_t cvtype_bytes(int cvtypeint)
 {
     cvtypespecs ts = cvtype_lookup(cvtypeint);
-    return imgview::data_type_size(ts.data_type) * ts.num_channels;
+    return imgviewtype::data_size(ts.data_type) * ts.num_channels;
 }
 
 int cvtype_to_video(int cvtypeint)
@@ -78,13 +81,15 @@ int cvtype_to_video(int cvtypeint)
 const cv::Mat cvmat(imgview const& view)
 {
     cv::Size matsize(/*cols*/(int)view.width, /*rows*/(int)view.height);
-    const cv::Mat matview(matsize, cvformat(view), view.buf);
+    C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wcast-qual")
+    const cv::Mat matview(matsize, cvformat(view), (char*)view.buf);
+    C4_SUPPRESS_WARNING_GCC_CLANG_POP
     // ensure that the cvmat is pointing at our data
     C4_ASSERT(same_mat(matview, view));
     return matview;
 }
 
-cv::Mat cvmat(imgview & view)
+cv::Mat cvmat(wimgview & view)
 {
     cv::Size matsize(/*cols*/(int)view.width, /*rows*/(int)view.height);
     cv::Mat matview(matsize, cvformat(view), view.buf);
@@ -98,9 +103,11 @@ bool same_mat(cv::Mat const& mat, imgview const& view)
     bool ok = true;
     ok &= (mat.type() == cvformat(view));
     ok &= (mat.isContinuous());
-    ok &= (&mat.at<char>(0) == view.buf);
-    ok &= (mat.total() * mat.elemSize() <= view.size_bytes);
+    ok &= (&mat.at<char>(0) == (const char*)view.buf);
+    ok &= (mat.total() * mat.elemSize() <= view.bytes_required());
     return ok;
 }
 
 } // namespace quickgui
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

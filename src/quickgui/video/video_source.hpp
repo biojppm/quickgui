@@ -2,6 +2,10 @@
 #define QUICKGUI_VIDEO_VIDEO_SOURCE_HPP_
 
 #include <string>
+#include <c4/error.hpp>
+
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
 
 namespace quickgui {
 
@@ -47,5 +51,7 @@ struct VideoSource
 };
 
 } // namespace quickgui
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP
 
 #endif /* QUICKGUI_VIDEO_VIDEO_SOURCE_HPP_ */

@@ -30,7 +30,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         return csize * (len / ssize);
     };
     // shadow offset position
-    auto sh = [csize=canvas_size, offs=_shadow_offset(canvas_size)](ImVec2 p){
+    auto sh = [offs=_shadow_offset(canvas_size)](ImVec2 p){
         return p + offs;
     };
     for(PrimitiveDrawList::Primitive const& prim : primitives.m_primitives)

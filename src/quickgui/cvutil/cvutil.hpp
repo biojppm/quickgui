@@ -30,7 +30,7 @@ size_t cvtype_bytes(int cvtypeint);
 int cvtype_to_video(int cvtypeint);
 bool same_mat(cv::Mat const& mat, imgview const& view);
 const cv::Mat cvmat(imgview const& view);
-cv::Mat cvmat(imgview & view);
+cv::Mat cvmat(wimgview & view);
 
 } // namespace quickgui
 

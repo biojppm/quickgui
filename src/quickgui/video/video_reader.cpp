@@ -27,6 +27,9 @@ C4_SUPPRESS_WARNING_GCC_CLANG_POP
 #endif
 
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 namespace quickgui {
 
 
@@ -308,10 +311,10 @@ struct VideoReader::Impl
         QUICKGUI_LOGF("found {} frames in {}", m_nframes, c4::to_csubstr(directory.c_str()));
         reset_frames();
         c4::fs::file_get_contents(*m_frame_filenames_next, &m_frame_data);
-        m_frame_firstview.load_bmp(m_frame_data.data(), m_frame_data.size());
+        m_frame_firstview = load_bmp(m_frame_data.data(), (uint32_t)m_frame_data.size());
         m_width = (uint32_t)m_frame_firstview.width;
         m_height = (uint32_t)m_frame_firstview.height;
-        QUICKGUI_LOGF("video frames: {}x{}px #ch={} data_size={}B", m_width, m_height, m_frame_firstview.num_channels, m_frame_firstview.size_bytes);
+        QUICKGUI_LOGF("video frames: {}x{}px #ch={} data_size={}B", m_width, m_height, m_frame_firstview.num_channels, m_frame_firstview.bytes_required());
     }
 
     void filter_filenames_for_bmp()
@@ -346,7 +349,7 @@ struct VideoReader::Impl
         return m_frame_filenames_next != ((c4::fs::EntryList const&)m_frame_filenames).end();
     }
 
-    void load_curr_frame(imgview *v)
+    void load_curr_frame(wimgview *v)
     {
         switch(m_src.source_type)
         {
@@ -379,7 +382,7 @@ struct VideoReader::Impl
         {
             C4_ASSERT(m_frame_filenames_curr != ((c4::fs::EntryList const&)m_frame_filenames).end());
             c4::fs::file_get_contents(*m_frame_filenames_curr, &m_frame_data);
-            v->load_bmp(m_frame_data.data(), m_frame_data.size());
+            *v = load_bmp(m_frame_data.data(), (uint32_t)m_frame_data.size());
             C4_CHECK(v->width == m_width);
             C4_CHECK(v->height == m_height);
             C4_CHECK(v->num_channels == m_frame_firstview.num_channels);
@@ -541,7 +544,7 @@ uint32_t VideoReader::height() const
 size_t VideoReader::frame_bytes() const
 {
     if(m_pimpl->from_frames())
-        return m_pimpl->m_frame_firstview.size_bytes;
+        return m_pimpl->m_frame_firstview.bytes_required();
 #ifdef QUICKGUI_USE_FFMPEG
     C4_ASSERT((m_pimpl->m_avbpp & 7) == 0);
     return m_pimpl->m_avbpp / 8 * area();
@@ -596,10 +599,10 @@ float VideoReader::video_fps() const
     return m_pimpl->m_fps;
 }
 
-imgview VideoReader::make_view(uint32_t force_numchannels) const
+wimgview VideoReader::make_view(uint32_t force_numchannels) const
 {
     uint32_t ch = force_numchannels ? force_numchannels : num_channels();
-    return quickgui::make_view(nullptr, 0, width(), height(), ch, data_type());
+    return quickgui::make_wimgview(nullptr, 0, width(), height(), ch, data_type());
 }
 
 bool VideoReader::frame_grab()
@@ -746,11 +749,11 @@ bool VideoReader::frame_grab()
 #endif
 }
 
-bool VideoReader::frame_read(imgview *v)
+bool VideoReader::frame_read(wimgview *v)
 {
     C4_ASSERT(v);
     // exit early if the data cannot accomodate the frame
-    if(v->size_bytes < frame_bytes())
+    if(v->bytes_required() < frame_bytes())
         return false;
     if(m_pimpl->from_frames())
     {
@@ -799,3 +802,5 @@ void VideoReader::time(std::chrono::nanoseconds t)
 }
 
 } // namespace quickgui
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

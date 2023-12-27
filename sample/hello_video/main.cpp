@@ -8,6 +8,9 @@ void draw_hello_world();
 void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 video_size);
 void handle_video_shortcuts(SampleVideoPlayer::Commands *cmds);
 
+C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
+C4_SUPPRESS_WARNING_GCC_CLANG("-Wold-style-cast")
+
 int main()
 {
     quickgui::widgets::WidgetState st;
@@ -112,7 +115,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
         {
             static bool draw_text = true;
             static ImVec2 text_pos = ImVec2{0.33f, 0.33f} * video_size;
-            static ucolor text_color = quickgui::ucolors::yellow;
+            static ucolor text_color = quickgui::colors::yellow_pure;
             static const char text[] = "wow this is nice";
             static float text_thickness = 1.f;
             _draw_primitive_widgets("text", &draw_text, &text_color, &text_thickness, [&]{
@@ -125,7 +128,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
         {
             static bool draw_point = true;
             static ImVec2 point_pos = ImVec2{0.44f, 0.44f} * video_size;
-            static ucolor point_color = quickgui::ucolors::yellowish;
+            static ucolor point_color = quickgui::colors::yellowish;
             static float point_thickness = 1.f;
             _draw_primitive_widgets("point", &draw_point, &point_color, &point_thickness, [&]{
                 draw_widget_pos("pos", &point_pos);
@@ -138,7 +141,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
             static bool draw_line = true;
             static ImVec2 line_pt0 = ImVec2{0.11f, 0.22f} * video_size;
             static ImVec2 line_pt1 = ImVec2{0.22f, 0.11f} * video_size;
-            static ucolor line_color = quickgui::ucolors::red;
+            static ucolor line_color = quickgui::colors::red;
             static float line_thickness = 1.f;
             _draw_primitive_widgets("line", &draw_line, &line_color, &line_thickness, [&]{
                 draw_widget_pos("line pt0", &line_pt0);
@@ -152,7 +155,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
             static bool draw_rect = true;
             static ImVec2 rect_pt0 = ImVec2{0.11f, 0.33f} * video_size;
             static ImVec2 rect_pt1 = ImVec2{0.22f, 0.55f} * video_size;
-            static ucolor rect_color = quickgui::ucolors::blue;
+            static ucolor rect_color = quickgui::colors::blue;
             static float rect_thickness = 1.f;
             _draw_primitive_widgets("rect", &draw_rect, &rect_color, &rect_thickness, [&]{
                 draw_widget_pos("rect pt0", &rect_pt0);
@@ -166,7 +169,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
             static bool draw_rect_filled = true;
             static ImVec2 rect_filled_pt0 = ImVec2{0.14f, 0.37f} * video_size;
             static ImVec2 rect_filled_pt1 = ImVec2{0.18f, 0.45f} * video_size;
-            static ucolor rect_filled_color = alpha(quickgui::ucolors::reddish, 0x5f);
+            static ucolor rect_filled_color = alpha(quickgui::colors::reddish, (uint8_t)(0x5f));
             static float rect_filled_thickness = 1.f;
             _draw_primitive_widgets("rect_filled", &draw_rect_filled, &rect_filled_color, &rect_filled_thickness, [&]{
                 draw_widget_pos("rect_filled pt0", &rect_filled_pt0);
@@ -180,7 +183,7 @@ void add_and_draw_primitives(quickgui::PrimitiveDrawList *primitives, ImVec2 vid
             static bool draw_circle = true;
             static ImVec2 circle_center = ImVec2{0.7f, 0.37f} * video_size;
             static float circle_radius = 0.1f * minof(video_size);
-            static ucolor circle_color = quickgui::ucolors::reddish;
+            static ucolor circle_color = quickgui::colors::reddish;
             static float circle_thickness = 1.f;
             _draw_primitive_widgets("circle", &draw_circle, &circle_color, &circle_thickness, [&]{
                 draw_widget_pos("circle center", &circle_center);
@@ -211,3 +214,5 @@ void handle_video_shortcuts(SampleVideoPlayer::Commands *cmds)
         return false;
     }, cmds);
 }
+
+C4_SUPPRESS_WARNING_GCC_CLANG_POP

@@ -29,14 +29,14 @@ public: // video info
     uint32_t num_frames() const;
     float    video_fps() const;
 
-    imgview  make_view(uint32_t force_numchannels=0) const;
+    wimgview  make_view(uint32_t force_numchannels=0) const;
 
 public: // player actions
 
     /** grab a frame if it is ready */
     bool frame_grab();
     /** requires a frame to be ready (prior call to frame_grab() returning true)  */
-    bool frame_read(imgview *view);
+    bool frame_read(wimgview *view);
 
     void frame(uint32_t frame);
     void time(std::chrono::nanoseconds time);
