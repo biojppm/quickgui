@@ -11,8 +11,8 @@ c4_project(VERSION 0.0.1
 #-------------------------------------------------------
 option(QUICKGUI_VULKAN_DEBUG "use the vulkan debug layers" ON)
 option(QUICKGUI_USE_OPENCV "" OFF)
-option(QUICKGUI_USE_FFMPEG "" OFF) # WIP
-option(QUICKGUI_USE_FLATBUFFERS "" OFF) # WIP
+option(QUICKGUI_USE_FFMPEG "WIP" OFF)
+option(QUICKGUI_USE_FLATBUFFERS "WIP" OFF)
 if(QUICKGUI_USE_OPENCV OR QUICKGUI_USE_FFMPEG)
     set(QUICKGUI_VIDEO_ENABLED ON)
 else()
@@ -30,6 +30,9 @@ include(./ext/imgui.cmake)
 find_package(Vulkan REQUIRED)
 if(QUICKGUI_USE_OPENCV)
     include(./ext/opencv.cmake)
+endif()
+if(QUICKGUI_USE_FFMPEG)
+    include(./ext/ffmpeg.cmake)
 endif()
 if(QUICKGUI_USE_FLATBUFFERS)
     include(./ext/flatbuffers.cmake)
@@ -143,9 +146,12 @@ if(QUICKGUI_VIDEO_ENABLED)
         INC_DIRS
             $<BUILD_INTERFACE:${QUICKGUI_SRC_DIR}>
             $<INSTALL_INTERFACE:${QUICKGUI_SRC_DIR}>
+        PUBLIC_DEFS
+            $<$<BOOL:${QUICKGUI_USE_FFMPEG}>:QUICKGUI_USE_FFMPEG>
         LIBS
             quickgui
             $<$<BOOL:${QUICKGUI_USE_OPENCV}>:quickgui-cvutil>
+            $<$<BOOL:${QUICKGUI_USE_FFMPEG}>:quickgui-ffmpeg>
     )
 endif()
 

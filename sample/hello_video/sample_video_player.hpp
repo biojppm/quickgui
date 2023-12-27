@@ -15,7 +15,7 @@ struct SampleVideoPlayer
 {
     static inline constexpr const uint32_t num_entries = quickgui::DynamicImage::RhiImage::num_entries;
 
-    SampleVideoReader m_reader;
+    SampleVideoReader   m_reader;
     bool                m_first_render;
     bool                m_playing;
     bool                m_load_paused_frame;

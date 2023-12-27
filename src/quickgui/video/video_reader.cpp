@@ -13,6 +13,8 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/log.h>
+#include <libavdevice/avdevice.h>
 } // extern "C"
 #elif defined(QUICKGUI_USE_CV)
 C4_SUPPRESS_WARNING_GCC_CLANG_PUSH
@@ -129,22 +131,25 @@ struct VideoReader::Impl
             m_nframes = (m_src.source_type == VideoSource::FILE) ?
                 (uint32_t)m_cvcap.get(cv::CAP_PROP_FRAME_COUNT) : 0u;
             m_fps = (float)m_cvcap.get(cv::CAP_PROP_FPS);
+            m_cvcap.set(cv::CAP_PROP_FPS, 30.0);
+            m_fps = (float)m_cvcap.get(cv::CAP_PROP_FPS);
             m_dt = fmsecs(1000.f / m_fps);
             cv::String backend = m_cvcap.getBackendName();
             int cvtype_orig = m_cvformat;
             m_cvformat = cvtype_to_video(m_cvformat);
             QUICKGUI_LOGF(R"(video properties:
-    format={} --> {}
     width={}
     height={}
+    format={} --> {}
     #channels={}
     #frames={}
     fps={}/s
     dt={}ms
     backend={}
 )",
+                          m_width, m_height,
                           cvtype_str(cvtype_orig), cvtype_str(m_cvformat),
-                          m_width, m_height, cvtype_lookup(m_cvformat).num_channels, m_nframes, m_fps, m_dt.count(),
+                          cvtype_lookup(m_cvformat).num_channels, m_nframes, m_fps, m_dt.count(),
                           c4::substr(backend.data(), backend.size()));
         };
         #endif
@@ -187,7 +192,7 @@ struct VideoReader::Impl
             AVPixFmtDescriptor const* fmtdesc = av_pix_fmt_desc_get(m_avformat);
             m_avnum_channels = (uint32_t)fmtdesc->nb_components;
             m_avbpp = (uint32_t)av_get_bits_per_pixel(fmtdesc);
-            m_avdata_type = imgview::data_u8;
+            m_avdata_type = imgviewtype::u8;
             C4_CHECK(m_avbpp == 8 * fmtdesc->nb_components);
             m_width = (uint32_t)m_avstream->codecpar->width;
             m_height = (uint32_t)m_avstream->codecpar->height;
@@ -229,7 +234,15 @@ struct VideoReader::Impl
         case VideoSource::CAMERA:
         {
             #ifdef QUICKGUI_USE_FFMPEG
-            C4_NOT_IMPLEMENTED();
+            // https://ffmpeg.org/ffmpeg-all.html#video4linux2_002c-v4l2
+            av_log_set_level(src.camera.log_level);
+            avdevice_register_all(); // for device
+            const AVInputFormat *input_fmt = av_find_input_format(src.camera.input_format);
+            AVDictionary *options = NULL;
+            C4_CHECK(av_dict_set(&options, "framerate", "20", 0) >= 0);
+            AVFormatContext *pAVFormatContext = nullptr;
+            // check video source
+            C4_CHECK(avformat_open_input(&pAVFormatContext, src.camera.device, input_fmt, NULL) >= 0);
             #elif defined(QUICKGUI_USE_CV)
             m_cvcap.open(src.camera.index);
             C4_CHECK_MSG(m_cvcap.isOpened(), "failed to open camera[%d]", src.camera.index);

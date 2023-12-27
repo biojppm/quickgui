@@ -13,11 +13,17 @@ struct VideoSource
 {
     struct VideoSourceCamera
     {
+        #ifdef QUICKGUI_USE_CV
         int index = 0;
         int width = 0;
         int height = 0;
         char codec[4] = {};
         bool has_codec() const { return *(uint32_t const*)codec != 0; }
+        #elif defined(QUICKGUI_USE_FFMPEG)
+        const char *device = "/dev/video0";
+        const char *input_format = "v4l2";
+        int log_level = 56; // see <avutil/log.h>
+        #endif
     } camera;
     struct VideoSourceImages
     {
