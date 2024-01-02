@@ -45,14 +45,12 @@ public: // player state
 
     uint32_t frame() const;
     std::chrono::nanoseconds time() const;
-    uint32_t loop_curr() const { return m_curr_loop; }
+    uint32_t loop_curr() const;
 
 public:
 
     struct Impl;
     std::unique_ptr<Impl> m_pimpl;
-    uint32_t m_curr_loop;
-    bool     m_loop;
 };
 
 } // namespace quickgui

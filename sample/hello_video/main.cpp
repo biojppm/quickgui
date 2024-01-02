@@ -23,7 +23,7 @@ int main()
     video_source.source_type = quickgui::VideoSource::CAMERA;
     #ifdef QUICKGUI_USE_FFMPEG
     video_source.camera.device = "/dev/video0";
-    video_source.camera.input_format = "v4l2";
+    video_source.camera.input_device = "v4l2";
     #elif defined(QUICKGUI_USE_CV)
     video_source.camera.index = 0;
     #endif

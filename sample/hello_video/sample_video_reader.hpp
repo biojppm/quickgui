@@ -19,23 +19,23 @@ struct imgviewbuf
 {
     using buffer_type = std::remove_const_t<typename quickgui::imgview::buffer_type>;
     std::vector<buffer_type> m_buf;
-    quickgui::wimgview m_quickgui;
+    quickgui::wimgview m_view;
 
     imgviewbuf() = default;
     bool empty() const { return m_buf.empty(); }
     void reset(quickgui::wimgview const& view)
     {
         m_buf.resize(view.bytes_required());
-        m_quickgui = view;
-        m_quickgui.buf = m_buf.data();
-        m_quickgui.buf_size = (uint32_t)m_buf.size();
-        static_assert(sizeof(m_quickgui.buf[0]) == sizeof(m_buf[0]));
+        m_view = view;
+        m_view.buf = m_buf.data();
+        m_view.buf_size = (uint32_t)m_buf.size();
+        static_assert(sizeof(m_view.buf[0]) == sizeof(m_buf[0]));
     }
 };
 
 inline void convert(imgviewbuf const& src, imgviewbuf &dst)
 {
-    convert_channels(src.m_quickgui, dst.m_quickgui);
+    convert_channels(src.m_view, dst.m_view);
 }
 
 
@@ -125,36 +125,36 @@ struct SampleVideoReader
 
     bool check_frame_ready() { return m_reader.frame_grab(); }
     bool finished() const { return m_reader.finished(); }
-    void read_frame() { C4_CHECK(m_reader.frame_read(&m_vframe_video->m_quickgui)); }
-    void vflip_frame() { vflip(m_vframe_video->m_quickgui, m_vframe_vflip->m_quickgui); }
+    void read_frame() { C4_CHECK(m_reader.frame_read(&m_vframe_video->m_view)); }
+    void vflip_frame() { vflip(m_vframe_video->m_view, m_vframe_vflip->m_view); }
 
     void copy_to_display_buffer(charspan mem)
     {
-        C4_ASSERT(mem.size() >= m_vframe_4ch_vflip.m_quickgui.bytes_required());
-        memcpy(mem.data(), m_vframe_4ch_vflip.m_quickgui.buf, m_vframe_4ch_vflip.m_quickgui.bytes_required());
+        C4_ASSERT(mem.size() >= m_vframe_4ch_vflip.m_view.bytes_required());
+        memcpy(mem.data(), m_vframe_4ch_vflip.m_view.buf, m_vframe_4ch_vflip.m_view.bytes_required());
     }
 
     void convert_channels()
     {
         if(m_reader.num_channels() == 1)
         {
-            if(m_vframe_3ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_3ch_vflip.m_view.bytes_required())
                 convert(m_vframe_1ch_vflip, m_vframe_3ch_vflip);
-            if(m_vframe_4ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_4ch_vflip.m_view.bytes_required())
                 convert(m_vframe_1ch_vflip, m_vframe_4ch_vflip);
         }
         else if(m_reader.num_channels() == 3)
         {
-            if(m_vframe_1ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_1ch_vflip.m_view.bytes_required())
                 convert(m_vframe_3ch_vflip, m_vframe_1ch_vflip);
-            if(m_vframe_4ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_4ch_vflip.m_view.bytes_required())
                 convert(m_vframe_3ch_vflip, m_vframe_4ch_vflip);
         }
         else if(m_reader.num_channels() == 4)
         {
-            if(m_vframe_3ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_3ch_vflip.m_view.bytes_required())
                 convert(m_vframe_4ch_vflip, m_vframe_3ch_vflip);
-            if(m_vframe_1ch_vflip.m_quickgui.bytes_required())
+            if(m_vframe_1ch_vflip.m_view.bytes_required())
                 convert(m_vframe_4ch_vflip, m_vframe_1ch_vflip);
         }
     }

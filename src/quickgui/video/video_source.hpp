@@ -20,9 +20,15 @@ struct VideoSource
         char codec[4] = {};
         bool has_codec() const { return *(uint32_t const*)codec != 0; }
         #elif defined(QUICKGUI_USE_FFMPEG)
+        const char *input_device = "v4l2";
         const char *device = "/dev/video0";
-        const char *input_format = "v4l2";
+        const char *input_format = "mjpeg";
+        int width = 1280;
+        int height = 720;
+        int framerate = 30;
         int log_level = 56; // see <avutil/log.h>
+        #else
+        #error no video input
         #endif
     } camera;
     struct VideoSourceImages
