@@ -18,6 +18,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/log.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/imgutils.h>
 #include <libavdevice/avdevice.h>
 #include <libswscale/swscale.h>
 } // extern "C"
@@ -374,6 +375,13 @@ C4_NO_INLINE void averr__(int errcode, const char *file, int line, const char *s
 }
 
 
+#if 0
+#define avdbg_(...) QUICKGUI_LOGF(__VA_ARGS__)
+#else
+#define avdbg_(...)
+#endif
+
+
 #define AVCHECK(stmt)                                   \
     do {                                                \
         int C4_XCAT(ret__, __LINE__) = (stmt);          \
@@ -392,11 +400,15 @@ struct ReaderAVCam
     AVCodecContext *m_codec_ctx = nullptr;
     AVFrame *m_frame = nullptr; ///< https://ffmpeg.org/doxygen/trunk/structAVFrame.html
     AVPacket *m_packet = nullptr;
+    bool m_packet_fresh = false;
+    bool m_packet_finished = true;
     int m_width;
     int m_height;
     float m_fps;
     fmsecs m_dt;
     AVPixelFormat m_avformat;
+    SwsContext* m_sws_conv = nullptr;
+    AVFrame m_frame_tmp;
     uint32_t m_num_channels;
     uint32_t m_bits_per_pixel;
     imgviewtype::data_type_e m_data_type;
@@ -407,6 +419,7 @@ struct ReaderAVCam
     }
     void destroy()
     {
+        sws_freeContext(m_sws_conv);
         av_packet_free(&m_packet);
         av_frame_free(&m_frame);
         avcodec_free_context(&m_codec_ctx);
@@ -419,7 +432,8 @@ struct ReaderAVCam
     {
         // https://github.com/leandromoreira/ffmpeg-libav-tutorial/blob/master/0_hello_world.c
         // https://ffmpeg.org/ffmpeg-all.html#video4linux2_002c-v4l2
-        av_log_set_level(cam.log_level);
+        QUICKGUI_LOGF("ffmpeg version: {}", avformat_version());
+        av_log_set_level(cam.log_level_init);
         // WTF? av_register_all();
         // WTF? avcodec_register_all();
         QUICKGUI_LOGF("register all");
@@ -502,6 +516,8 @@ struct ReaderAVCam
         C4_CHECK(m_frame != nullptr);
         // https://ffmpeg.org/doxygen/trunk/structAVPacket.html
         m_packet = av_packet_alloc();
+        m_packet_fresh = false;
+        m_packet_finished = true;
         C4_CHECK(m_packet != nullptr);
         m_width = codecpar->width;
         m_height = codecpar->height;
@@ -511,6 +527,11 @@ struct ReaderAVCam
         AVPixFmtDescriptor const* fmtdesc = av_pix_fmt_desc_get(m_avformat);
         m_num_channels = (uint32_t)fmtdesc->nb_components;
         m_bits_per_pixel = (uint32_t)av_get_bits_per_pixel(fmtdesc);
+        m_sws_conv = sws_getContext(m_width, m_height, m_avformat,
+                                    m_width, m_height, AV_PIX_FMT_RGB24,
+                                    SWS_FAST_BILINEAR,
+                                    nullptr, nullptr, nullptr);
+        av_log_set_level(cam.log_level);
     }
 
     size_t frame_bytes() const
@@ -528,15 +549,13 @@ struct ReaderAVCam
         return m_num_channels;
     }
 
-    bool m_packet_fresh = false;
-    bool m_packet_finished = true;
     bool frame_grab()
     {
         if(!m_packet_finished)
             return true;
-        QUICKGUI_LOGF("... read frame");
+        avdbg_("... read frame");
         const int ret = av_read_frame(m_fmt_ctx, m_packet);
-        bool has_one = (ret >= 0) && ((unsigned int)m_packet->stream_index == m_stream_index);
+        const bool has_one = (ret >= 0) && ((unsigned int)m_packet->stream_index == m_stream_index);
         if(has_one)
         {
             m_packet_fresh = true;
@@ -545,27 +564,27 @@ struct ReaderAVCam
         return has_one;
     }
 
-    bool frame_read(wimgview *v)
+    bool frame_read_()
     {
         if(m_packet_fresh)
         {
-            QUICKGUI_LOGF("... send packet");
+            avdbg_("... send packet");
             AVCHECK(avcodec_send_packet(m_codec_ctx, m_packet));
             av_packet_unref(m_packet);
             m_packet_fresh = false;
         }
-        QUICKGUI_LOGF("... recv frame");
+        avdbg_("... recv frame");
         int ret = avcodec_receive_frame(m_codec_ctx, m_frame);
         if(C4_UNLIKELY(ret < 0))
         {
             if(ret == AVERROR(EAGAIN))
             {
-                QUICKGUI_LOGF("... EAGAIN");
+                avdbg_("... EAGAIN");
                 return true;
             }
             else if(ret == AVERROR_EOF)
             {
-                QUICKGUI_LOGF("... EOF");
+                avdbg_("... EOF");
                 return true;
             }
             else if(ret < 0)
@@ -575,26 +594,57 @@ struct ReaderAVCam
             }
         }
         m_packet_finished = true;
+        C4_ASSERT(m_frame->width == m_width);
+        C4_ASSERT(m_frame->height == m_height);
+        C4_ASSERT(m_frame->format == m_avformat);
         C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wdeprecated-declarations");
-        QUICKGUI_LOGF("Frame {} (type={}, size={}B, format={}({})) pts {} key_frame {} [DTS {}]",
-                      m_codec_ctx->frame_number,
-                      av_get_picture_type_char(m_frame->pict_type),
-                      m_frame->pkt_size,
-                      m_frame->format,
-                      av_pix_fmt_desc_get((AVPixelFormat)m_frame->format) ? av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name : "unknown",
-                      m_frame->pts,
-                      m_frame->key_frame,
-                      m_frame->coded_picture_number);
+        avdbg_("Frame {} (type={}, size={}B, format={}({})) pts {} key_frame {} [DTS {}]",
+               m_codec_ctx->frame_number,
+               av_get_picture_type_char(m_frame->pict_type),
+               m_frame->pkt_size,
+               m_frame->format,
+               av_pix_fmt_desc_get((AVPixelFormat)m_frame->format) ? av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name : "unknown",
+               m_frame->pts,
+               m_frame->key_frame,
+               m_frame->coded_picture_number);
         C4_SUPPRESS_WARNING_GCC_CLANG_POP
-        //C4_ASSERT_MSG(m_frame->format == AV_PIX_FMT_YUV422P, "format was %s", av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name);
-        C4_ASSERT(m_frame->format == AV_PIX_FMT_YUYV422);
+        return true;
+    }
+
+    bool frame_read(wimgview *v)
+    {
+        if(!frame_read_())
+            return false;
+        C4_ASSERT(m_frame->width == m_width);
+        C4_ASSERT(m_frame->height == m_height);
         C4_ASSERT(m_frame->crop_top == 0u);
         C4_ASSERT(m_frame->crop_bottom == 0u);
         C4_ASSERT(m_frame->crop_left == 0u);
         C4_ASSERT(m_frame->crop_right == 0u);
-        yuy2view yuy2;
-        yuy2.reset(m_frame->data[0], (uint32_t)m_frame->linesize[0], (uint32_t)m_frame->width, (uint32_t)m_frame->height, imgviewtype::u8);
-        convert_yuy2_to_rgb(yuy2, *v);
+        C4_ASSERT(m_frame->width == (int)v->width);
+        C4_ASSERT(m_frame->height == (int)v->height);
+        C4_ASSERT(v->valid());
+        if(m_frame->format == AV_PIX_FMT_YUYV422)
+        {
+            wyuy2view yuv;
+            yuv.reset(m_frame->data[0], (uint32_t)m_frame->linesize[0], (uint32_t)m_frame->width, (uint32_t)m_frame->height, imgviewtype::u8);
+            convert_yuyv422_to_rgb(yuv, *v);
+        }
+        else if(m_frame->format == AV_PIX_FMT_YUVJ422P)
+        {
+            // https://stackoverflow.com/questions/61006755/collect-avframes-into-buffer
+            AVPixelFormat fmt = AV_PIX_FMT_RGB24;
+            m_frame_tmp.width = m_frame->width;
+            m_frame_tmp.height = m_frame->height;
+            m_frame_tmp.format = fmt;
+            AVCHECK(av_image_fill_arrays(m_frame_tmp.data, m_frame_tmp.linesize, v->buf, fmt, m_frame_tmp.width, m_frame_tmp.height, 1));
+            AVCHECK(sws_scale(m_sws_conv, m_frame->data, m_frame->linesize, 0, m_frame->height, m_frame_tmp.data, m_frame_tmp.linesize));
+        }
+        else
+        {
+            C4_ERROR("unknown format: %d (%s)", av_pix_fmt_desc_get((AVPixelFormat)m_frame->format) ? av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name : "unknown");
+            return false;
+        }
         return true;
     }
 
@@ -605,6 +655,7 @@ struct ReaderAVCam
 
     void frame(uint32_t frame_index) const
     {
+        C4_ERROR("not implemented");
         (void)frame_index;
     }
 };

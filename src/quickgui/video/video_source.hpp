@@ -22,11 +22,12 @@ struct VideoSource
         #elif defined(QUICKGUI_USE_FFMPEG)
         const char *input_device = "v4l2";
         const char *device = "/dev/video0";
-        const char *input_format = "yuyv422"; // "mjpeg";
+        const char *input_format = "mjpeg"; // "mjpeg", "yuyv422";
         int width = 1280;
         int height = 720;
         int framerate = 30;
-        int log_level = 56; // see <avutil/log.h>
+        int log_level = 32; // INFO see <avutil/log.h>
+        int log_level_init = 56; // TRACE see <avutil/log.h>
         #else
         #error no video input
         #endif

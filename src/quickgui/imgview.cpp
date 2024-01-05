@@ -350,7 +350,7 @@ void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-void convert_yuy2_to_rgb(yuy2view const& src, wimgview const& dst)
+void convert_yuyv422_to_rgb(yuy2view const& src, wimgview const& dst)
 {
     C4_CHECK(dst.data_type == imgviewtype::u8);
     C4_CHECK(src.buf != dst.buf);
@@ -373,8 +373,8 @@ void convert_yuy2_to_rgb(yuy2view const& src, wimgview const& dst)
         chG = 1,
         chB = 2,
         chY0 = 0,
-        chY1 = 1,
-        chU = 2,
+        chY1 = 2,
+        chU = 1,
         chV = 3,
     };
     using T = uint8_t;

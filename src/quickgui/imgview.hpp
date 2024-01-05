@@ -114,6 +114,7 @@ public:
 public:
 
     operator bool() const noexcept { return buf != nullptr; }
+    bool valid() const noexcept { return buf != nullptr; }
 
     template<class U>
     bool is_same(basic_imgview<U> const& that) const noexcept
@@ -418,7 +419,8 @@ public:
 
 };
 
-void convert_yuy2_to_rgb(yuy2view const& src, wimgview const& dst);
+// packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
+void convert_yuyv422_to_rgb(yuy2view const& src, wimgview const& dst);
 
 
 C4_SUPPRESS_WARNING_GCC_CLANG_POP
