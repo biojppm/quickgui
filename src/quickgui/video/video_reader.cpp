@@ -14,11 +14,12 @@
 #ifdef QUICKGUI_USE_FFMPEG
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavcodec/mediacodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/pixdesc.h>
 #include <libavutil/log.h>
 #include <libavutil/pixdesc.h>
 #include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
 } // extern "C"
 #include <c4/format.hpp>
 #elif defined(QUICKGUI_USE_CV)
@@ -365,11 +366,29 @@ struct ReaderAVFile
 };
 
 
+C4_NO_INLINE void averr__(int errcode, const char *file, int line, const char *stmt)
+{
+    char errmsg[128];
+    av_make_error_string(errmsg, sizeof(errmsg), errcode);
+    c4::handle_error(c4::srcloc{file, line}, "%s: (%d) %s", stmt, errcode, errmsg);
+}
+
+
+#define AVCHECK(stmt)                                   \
+    do {                                                \
+        int C4_XCAT(ret__, __LINE__) = (stmt);          \
+        if(C4_UNLIKELY(C4_XCAT(ret__, __LINE__) < 0))   \
+            averr__(C4_XCAT(ret__, __LINE__),           \
+                    __FILE__, __LINE__, #stmt);         \
+    } while(0)
+
+
 struct ReaderAVCam
 {
     AVFormatContext *m_fmt_ctx = nullptr;
     AVStream const* m_stream = nullptr;
     unsigned int m_stream_index = 0;
+    AVCodec const* m_codec = nullptr;
     AVCodecContext *m_codec_ctx = nullptr;
     AVFrame *m_frame = nullptr; ///< https://ffmpeg.org/doxygen/trunk/structAVFrame.html
     AVPacket *m_packet = nullptr;
@@ -418,7 +437,7 @@ struct ReaderAVCam
         QUICKGUI_LOGF("device options: {}", av_dict_count(options));
         // check video source
         QUICKGUI_LOGF("opening device: {}", cam.device);
-        C4_CHECK(avformat_open_input(&m_fmt_ctx, cam.device, input_fmt, &options) >= 0);
+        AVCHECK(avformat_open_input(&m_fmt_ctx, cam.device, input_fmt, &options));
         QUICKGUI_LOGF("#ignored device options: {}", av_dict_count(options));
         AVDictionaryEntry *t = NULL;
         while ((t = av_dict_get(options, "", t, AV_DICT_IGNORE_SUFFIX)))
@@ -429,9 +448,9 @@ struct ReaderAVCam
         QUICKGUI_LOGF("dump format");
         av_dump_format(m_fmt_ctx, 0, cam.device, 0);
         QUICKGUI_LOGF("find stream info");
-        C4_CHECK(avformat_find_stream_info(m_fmt_ctx, nullptr) >= 0);
+        AVCHECK(avformat_find_stream_info(m_fmt_ctx, nullptr));
         // search stream index
-        AVCodec const* codec = nullptr;
+        m_codec = nullptr;
         m_stream = nullptr;
         m_stream_index = m_fmt_ctx->nb_streams + 1;
         for(unsigned int i = 0; i < m_fmt_ctx->nb_streams; ++i)
@@ -458,7 +477,7 @@ struct ReaderAVCam
                 QUICKGUI_LOGF("stream[{}]: codec is video. choosing.", i);
                 m_stream = m_fmt_ctx->streams[i];
                 m_stream_index = i;
-                codec = local_codec;
+                m_codec = local_codec;
                 break;
             }
         }
@@ -466,18 +485,18 @@ struct ReaderAVCam
         {
             C4_ERROR("found no stream with video codec");
         }
-        C4_ASSERT(codec);
+        C4_ASSERT(m_codec);
         C4_ASSERT(m_stream_index < m_fmt_ctx->nb_streams);
         AVCodecParameters *codecpar = m_stream->codecpar;
         // https://ffmpeg.org/doxygen/trunk/structAVCodecContext.html
-        m_codec_ctx = avcodec_alloc_context3(codec);
+        m_codec_ctx = avcodec_alloc_context3(m_codec);
         C4_CHECK(m_codec_ctx != nullptr);
         // Fill the codec context based on the values from the supplied codec parameters
         // https://ffmpeg.org/doxygen/trunk/group__lavc__core.html#gac7b282f51540ca7a99416a3ba6ee0d16
-        C4_CHECK(avcodec_parameters_to_context(m_codec_ctx, codecpar) >= 0);
+        AVCHECK(avcodec_parameters_to_context(m_codec_ctx, codecpar));
         // Initialize the AVCodecContext to use the given AVCodec.
         // https://ffmpeg.org/doxygen/trunk/group__lavc__core.html#ga11f785a188d7d9df71621001465b0f1d
-        C4_CHECK(avcodec_open2(m_codec_ctx, codec, NULL) >= 0);
+        AVCHECK(avcodec_open2(m_codec_ctx, m_codec, NULL));
         // https://ffmpeg.org/doxygen/trunk/structAVFrame.html
         m_frame = av_frame_alloc();
         C4_CHECK(m_frame != nullptr);
@@ -496,7 +515,7 @@ struct ReaderAVCam
 
     size_t frame_bytes() const
     {
-        return (size_t)(3 * m_width * m_height);  // FIXME
+        return (size_t)(m_num_channels * (uint32_t)m_width * (uint32_t)m_height);  // FIXME
     }
 
     imgviewtype::data_type_e data_type() const
@@ -509,15 +528,74 @@ struct ReaderAVCam
         return m_num_channels;
     }
 
+    bool m_packet_fresh = false;
+    bool m_packet_finished = true;
     bool frame_grab()
     {
-        return true;
+        if(!m_packet_finished)
+            return true;
+        QUICKGUI_LOGF("... read frame");
+        const int ret = av_read_frame(m_fmt_ctx, m_packet);
+        bool has_one = (ret >= 0) && ((unsigned int)m_packet->stream_index == m_stream_index);
+        if(has_one)
+        {
+            m_packet_fresh = true;
+            m_packet_finished = false;
+        }
+        return has_one;
     }
 
     bool frame_read(wimgview *v)
     {
-        C4_NOT_IMPLEMENTED();(void)v;
-        return false;
+        if(m_packet_fresh)
+        {
+            QUICKGUI_LOGF("... send packet");
+            AVCHECK(avcodec_send_packet(m_codec_ctx, m_packet));
+            av_packet_unref(m_packet);
+            m_packet_fresh = false;
+        }
+        QUICKGUI_LOGF("... recv frame");
+        int ret = avcodec_receive_frame(m_codec_ctx, m_frame);
+        if(C4_UNLIKELY(ret < 0))
+        {
+            if(ret == AVERROR(EAGAIN))
+            {
+                QUICKGUI_LOGF("... EAGAIN");
+                return true;
+            }
+            else if(ret == AVERROR_EOF)
+            {
+                QUICKGUI_LOGF("... EOF");
+                return true;
+            }
+            else if(ret < 0)
+            {
+                averr__(ret, __FILE__, __LINE__, "avcodec_receive_frame");
+                return false;
+            }
+        }
+        m_packet_finished = true;
+        C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wdeprecated-declarations");
+        QUICKGUI_LOGF("Frame {} (type={}, size={}B, format={}({})) pts {} key_frame {} [DTS {}]",
+                      m_codec_ctx->frame_number,
+                      av_get_picture_type_char(m_frame->pict_type),
+                      m_frame->pkt_size,
+                      m_frame->format,
+                      av_pix_fmt_desc_get((AVPixelFormat)m_frame->format) ? av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name : "unknown",
+                      m_frame->pts,
+                      m_frame->key_frame,
+                      m_frame->coded_picture_number);
+        C4_SUPPRESS_WARNING_GCC_CLANG_POP
+        //C4_ASSERT_MSG(m_frame->format == AV_PIX_FMT_YUV422P, "format was %s", av_pix_fmt_desc_get((AVPixelFormat)m_frame->format)->name);
+        C4_ASSERT(m_frame->format == AV_PIX_FMT_YUYV422);
+        C4_ASSERT(m_frame->crop_top == 0u);
+        C4_ASSERT(m_frame->crop_bottom == 0u);
+        C4_ASSERT(m_frame->crop_left == 0u);
+        C4_ASSERT(m_frame->crop_right == 0u);
+        yuy2view yuy2;
+        yuy2.reset(m_frame->data[0], (uint32_t)m_frame->linesize[0], (uint32_t)m_frame->width, (uint32_t)m_frame->height, imgviewtype::u8);
+        convert_yuy2_to_rgb(yuy2, *v);
+        return true;
     }
 
     uint32_t frame() const
@@ -917,13 +995,13 @@ struct VideoReader::Impl
     uint32_t    m_nframes;
     float       m_fps;
     fmsecs      m_dt;
-    ReaderImages m_reader_images;
 
+    ReaderImages m_images;
     #ifdef QUICKGUI_USE_FFMPEG
-    ReaderAVCam m_reader_av_cam;
-    ReaderAVFile m_reader_av_video;
+    ReaderAVCam m_av_cam;
+    ReaderAVFile m_av_video;
     #elif defined(QUICKGUI_USE_CV)
-    ReaderCVCap m_reader_cv_cap;
+    ReaderCVCap m_cv_cap;
     #endif
 
     Impl(VideoSource const& src)
@@ -933,40 +1011,40 @@ struct VideoReader::Impl
         , m_nframes()
         , m_fps()
         , m_dt()
-        , m_reader_images()
+        , m_images()
         #ifdef QUICKGUI_USE_FFMPEG
-        , m_reader_av_cam()
-        , m_reader_av_video()
+        , m_av_cam()
+        , m_av_video()
         #elif defined(QUICKGUI_USE_CV)
-        , m_reader_cv_cap()
+        , m_cv_cap()
         #endif
     {
         switch(src.source_type)
         {
         case VideoSource::IMAGES:
-            m_reader_images.init(src.images);
-            m_width = m_reader_images.m_width;
-            m_height = m_reader_images.m_height;
-            m_nframes = m_reader_images.m_nframes;
-            m_fps = m_reader_images.m_fps;
-            m_dt = m_reader_images.m_dt;
+            m_images.init(src.images);
+            m_width = m_images.m_width;
+            m_height = m_images.m_height;
+            m_nframes = m_images.m_nframes;
+            m_fps = m_images.m_fps;
+            m_dt = m_images.m_dt;
             break;
         case VideoSource::FILE:
         {
             #ifdef QUICKGUI_USE_FFMPEG
-            m_reader_av_video.init(src.file);
-            m_width = (uint32_t)m_reader_av_video.m_width;
-            m_height = (uint32_t)m_reader_av_video.m_height;
-            m_nframes = m_reader_av_video.m_nframes;
-            m_fps = m_reader_images.m_fps;
-            m_dt = m_reader_images.m_dt;
+            m_av_video.init(src.file);
+            m_width = (uint32_t)m_av_video.m_width;
+            m_height = (uint32_t)m_av_video.m_height;
+            m_nframes = m_av_video.m_nframes;
+            m_fps = m_images.m_fps;
+            m_dt = m_images.m_dt;
             #elif defined(QUICKGUI_USE_CV)
-            m_reader_cv_cap.init(src);
-            m_width = m_reader_cv_cap.m_width;
-            m_height = m_reader_cv_cap.m_height;
-            m_nframes = m_reader_cv_cap.m_nframes;
-            m_fps = m_reader_cv_cap.m_fps;
-            m_dt = m_reader_cv_cap.m_dt;
+            m_cv_cap.init(src);
+            m_width = m_cv_cap.m_width;
+            m_height = m_cv_cap.m_height;
+            m_nframes = m_cv_cap.m_nframes;
+            m_fps = m_cv_cap.m_fps;
+            m_dt = m_cv_cap.m_dt;
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -975,19 +1053,19 @@ struct VideoReader::Impl
         case VideoSource::CAMERA:
         {
             #ifdef QUICKGUI_USE_FFMPEG
-            m_reader_av_cam.init(src.camera);
-            m_width = (uint32_t)m_reader_av_cam.m_width;
-            m_height = (uint32_t)m_reader_av_cam.m_height;
+            m_av_cam.init(src.camera);
+            m_width = (uint32_t)m_av_cam.m_width;
+            m_height = (uint32_t)m_av_cam.m_height;
             m_nframes = 0u;
-            m_fps = m_reader_av_cam.m_fps;
-            m_dt = m_reader_av_cam.m_dt;
+            m_fps = m_av_cam.m_fps;
+            m_dt = m_av_cam.m_dt;
             #elif defined(QUICKGUI_USE_CV)
-            m_reader_cv_cap.init(src);
-            m_width = m_reader_cv_cap.m_width;
-            m_height = m_reader_cv_cap.m_height;
+            m_cv_cap.init(src);
+            m_width = m_cv_cap.m_width;
+            m_height = m_cv_cap.m_height;
             m_nframes = 0u;
-            m_fps = m_reader_cv_cap.m_fps;
-            m_dt = m_reader_cv_cap.m_dt;
+            m_fps = m_cv_cap.m_fps;
+            m_dt = m_cv_cap.m_dt;
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1004,9 +1082,9 @@ struct VideoReader::Impl
         {
         case VideoSource::CAMERA:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_grab();
+            return m_cv_cap.frame_grab();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_cam.frame_grab();
+            return m_av_cam.frame_grab();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1014,16 +1092,16 @@ struct VideoReader::Impl
         case VideoSource::FILE:
         {
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_grab();
+            return m_cv_cap.frame_grab();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.frame_grab();
+            return m_av_video.frame_grab();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
             break;
         }
         case VideoSource::IMAGES:
-            return m_reader_images.frame_grab();
+            return m_images.frame_grab();
         default:
             C4_NOT_IMPLEMENTED();
         }
@@ -1039,9 +1117,9 @@ struct VideoReader::Impl
         {
         case VideoSource::CAMERA:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_read(v);
+            return m_cv_cap.frame_read(v);
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_cam.frame_read(v);
+            return m_av_cam.frame_read(v);
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1049,16 +1127,16 @@ struct VideoReader::Impl
         case VideoSource::FILE:
         {
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_read(v);
+            return m_cv_cap.frame_read(v);
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.frame_read(v);
+            return m_av_video.frame_read(v);
             #else
             C4_NOT_IMPLEMENTED();
             #endif
             break;
         }
         case VideoSource::IMAGES:
-            return m_reader_images.frame_read(v);
+            return m_images.frame_read(v);
         default:
             C4_NOT_IMPLEMENTED();
         }
@@ -1072,12 +1150,12 @@ struct VideoReader::Impl
         case VideoSource::CAMERA:
             break;
         case VideoSource::IMAGES:
-            return m_reader_images.frame();
+            return m_images.frame();
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame();
+            return m_cv_cap.frame();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.frame();
+            return m_av_video.frame();
             #else
             C4_NOT_IMPLEMENTED();
             break;
@@ -1095,16 +1173,16 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            m_reader_images.frame(frame_index);
+            m_images.frame(frame_index);
             break;
         case VideoSource::CAMERA:
             QUICKGUI_LOGF("cannot set frame on camera");
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            m_reader_cv_cap.frame(frame_index);
+            m_cv_cap.frame(frame_index);
             #elif defined(QUICKGUI_USE_FFMPEG)
-            m_reader_av_video.frame(frame_index);
+            m_av_video.frame(frame_index);
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1120,14 +1198,14 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            return m_reader_images.time();
+            return m_images.time();
         case VideoSource::CAMERA:
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.time();
+            return m_cv_cap.time();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.time();
+            return m_av_video.time();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1144,16 +1222,16 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            m_reader_images.time(t);
+            m_images.time(t);
             break;
         case VideoSource::CAMERA:
             QUICKGUI_LOGF("cannot set time on camera");
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            m_reader_cv_cap.time(t);
+            m_cv_cap.time(t);
             #elif defined(QUICKGUI_USE_FFMPEG)
-            m_reader_av_video.time(t);
+            m_av_video.time(t);
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1169,14 +1247,14 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            return m_reader_images.finished();
+            return m_images.finished();
         case VideoSource::CAMERA:
             return false;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.finished();
+            return m_cv_cap.finished();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.finished();
+            return m_av_video.finished();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1192,21 +1270,21 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            return m_reader_images.frame_bytes();
+            return m_images.frame_bytes();
         case VideoSource::CAMERA:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_bytes();
+            return m_cv_cap.frame_bytes();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_cam.frame_bytes();
+            return m_av_cam.frame_bytes();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.frame_bytes();
+            return m_cv_cap.frame_bytes();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.frame_bytes();
+            return m_av_video.frame_bytes();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1222,21 +1300,21 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            return m_reader_images.data_type();
+            return m_images.data_type();
         case VideoSource::CAMERA:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.data_type();
+            return m_cv_cap.data_type();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_cam.data_type();
+            return m_av_cam.data_type();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.data_type();
+            return m_cv_cap.data_type();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.data_type();
+            return m_av_video.data_type();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
@@ -1252,21 +1330,21 @@ struct VideoReader::Impl
         switch(m_src.source_type)
         {
         case VideoSource::IMAGES:
-            return m_reader_images.num_channels();
+            return m_images.num_channels();
         case VideoSource::CAMERA:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.num_channels();
+            return m_cv_cap.num_channels();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_cam.num_channels();
+            return m_av_cam.num_channels();
             #else
             C4_NOT_IMPLEMENTED();
             #endif
             break;
         case VideoSource::FILE:
             #ifdef QUICKGUI_USE_CV
-            return m_reader_cv_cap.num_channels();
+            return m_cv_cap.num_channels();
             #elif defined(QUICKGUI_USE_FFMPEG)
-            return m_reader_av_video.num_channels();
+            return m_av_video.num_channels();
             #else
             C4_NOT_IMPLEMENTED();
             #endif

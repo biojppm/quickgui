@@ -29,6 +29,7 @@ int main()
     #endif
     SampleVideoPlayer video_player(video_source);
     SampleVideoPlayer::Commands video_player_commands;
+    video_player.m_playing = true;
 
     quickgui::PrimitiveDrawList primitives = {};
     quickgui::OverlayCanvas overlay_canvas = {};

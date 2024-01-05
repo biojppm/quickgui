@@ -22,7 +22,7 @@ struct VideoSource
         #elif defined(QUICKGUI_USE_FFMPEG)
         const char *input_device = "v4l2";
         const char *device = "/dev/video0";
-        const char *input_format = "mjpeg";
+        const char *input_format = "yuyv422"; // "mjpeg";
         int width = 1280;
         int height = 720;
         int framerate = 30;

@@ -1,5 +1,6 @@
 #include "quickgui/imgview.hpp"
 #include "quickgui/mem.hpp"
+#include "quickgui/math.hpp"
 #include <c4/types.hpp>
 #include <c4/error.hpp>
 #include <c4/memory_util.hpp>
@@ -166,24 +167,6 @@ size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
 }
 
 
-template<class T>
-void basic_imgview<T>::reset(T *ibuf, uint32_t sz, uint32_t width_, uint32_t height_,
-                             uint32_t num_channels_, imgview::data_type_e dt)
-{
-    buf = ibuf;
-    buf_size = sz;
-    width = width_;
-    height = height_;
-    num_channels = num_channels_;
-    data_type = dt;
-    if(bytes_required() > buf_size)
-    {
-        buf = nullptr;
-        buf_size = 0;
-    }
-}
-
-
 imgview make_imgview(void const* buf, uint32_t sz, imgview const& blueprint)
 {
     imgview v;
@@ -223,7 +206,7 @@ void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
     C4_CHECK(src.num_channels == dst.num_channels);
     C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     using T = int8_t;
-    using I = int32_t; // using signed indices for faster iteration
+    using I = int32_t;
     const I H = (I)src.height;
     const I N = (I)src.width * (I)src.num_channels * (I)src.data_type_size();
     const uint32_t sN = (uint32_t)N;
@@ -240,7 +223,7 @@ void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
 void vflip(wimgview & C4_RESTRICT dst) noexcept
 {
     using T = uint8_t;
-    using I = int32_t; // using signed indices for faster iteration
+    using I = int32_t;
     const I H = (I)dst.height;
     const I H2 = (I)H/(I)2;
     const I W = (I)dst.width;
@@ -269,7 +252,7 @@ void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst
     C4_CHECK(src.buf_size / src.num_channels == dst.buf_size / dst.num_channels);
     C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     using T = int8_t;
-    using I = int32_t; // using signed indices for faster iteration
+    using I = int32_t;
     const I H = (I)src.height;
     const I W = (I)src.width;
     enum : T { alphamax = -1 };
@@ -360,6 +343,66 @@ void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst
         C4_NOT_IMPLEMENTED();
     }
     #undef iterview
+}
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+void convert_yuy2_to_rgb(yuy2view const& src, wimgview const& dst)
+{
+    C4_CHECK(dst.data_type == imgviewtype::u8);
+    C4_CHECK(src.buf != dst.buf);
+    C4_CHECK(src.width == dst.width);
+    C4_CHECK(src.height == dst.height);
+    C4_CHECK(src.pixel_area() == dst.pixel_area());
+    C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
+    // https://stackoverflow.com/questions/72056909/convert-yuv2-yuyv-frames-to-rgb-without-use-of-opencv
+    enum : int {
+        Y_OFFSET = 16,
+        UV_OFFSET = 128,
+        YUV2RGB_11 = 298,
+        YUV2RGB_12 = -1,
+        YUV2RGB_13 = 409,
+        YUV2RGB_22 = -100,
+        YUV2RGB_23 = -210,
+        YUV2RGB_32 = 519,
+        YUV2RGB_33 = 0,
+        chR = 0,
+        chG = 1,
+        chB = 2,
+        chY0 = 0,
+        chY1 = 1,
+        chU = 2,
+        chV = 3,
+    };
+    using T = uint8_t;
+    using I = int32_t;
+    T const* C4_RESTRICT yuy2 = (T const*) src.buf;
+    T      * C4_RESTRICT rgb = (T *) dst.buf;
+    const I num_yuy_blocks = (I)src.pixel_area() / (I)2;
+    for(I px = 0u; px < num_yuy_blocks; ++px)
+    {
+        const int u = ((int)yuy2[chU]) - UV_OFFSET;
+        const int v = ((int)yuy2[chV]) - UV_OFFSET;
+        const int uv_r = YUV2RGB_12 * u + YUV2RGB_13 * v;
+        const int uv_g = YUV2RGB_22 * u + YUV2RGB_23 * v;
+        const int uv_b = YUV2RGB_32 * u + YUV2RGB_33 * v;
+        // 1st pixel
+        int y = YUV2RGB_11 * (((int)yuy2[chY0]) - Y_OFFSET);
+        rgb[chR] = (T)clamp<int, 0, 255>((y + uv_r) >> 8); // r
+        rgb[chG] = (T)clamp<int, 0, 255>((y + uv_g) >> 8); // g
+        rgb[chB] = (T)clamp<int, 0, 255>((y + uv_b) >> 8); // b
+        rgb += 3;
+        // 2nd pixel
+        y = YUV2RGB_11 * (((int)yuy2[chY1]) - Y_OFFSET);
+        rgb[chR] = (T)clamp<int, 0, 255>((y + uv_r) >> 8); // r
+        rgb[chG] = (T)clamp<int, 0, 255>((y + uv_g) >> 8); // g
+        rgb[chB] = (T)clamp<int, 0, 255>((y + uv_b) >> 8); // b
+        rgb += 3;
+        yuy2 += 4;
+    }
 }
 
 } // namespace quickgui

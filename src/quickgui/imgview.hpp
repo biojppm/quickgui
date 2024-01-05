@@ -96,8 +96,20 @@ public:
 
 public:
 
-    void reset(T *buf, uint32_t sz, uint32_t width, uint32_t height,
-               uint32_t num_channels, data_type_e data_type);
+    void reset(T *ibuf, uint32_t sz, uint32_t width_, uint32_t height_, uint32_t num_channels_, data_type_e dt)
+    {
+        buf = ibuf;
+        buf_size = sz;
+        width = width_;
+        height = height_;
+        num_channels = num_channels_;
+        data_type = dt;
+        if(bytes_required() > buf_size)
+        {
+            buf = nullptr;
+            buf_size = 0;
+        }
+    }
 
 public:
 
@@ -200,7 +212,7 @@ public:
     }
 
     template<class U, class V=T>
-    auto set(uint32_t w, uint32_t h, uint32_t ch, T chval) const noexcept
+    auto set(uint32_t w, uint32_t h, uint32_t ch, U chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
         _typecheck(U);
@@ -216,11 +228,11 @@ public:
     auto set(uint32_t w, uint32_t h, U chval) const noexcept
         -> std::enable_if_t<!std::is_const_v<V>, void>
     {
-        _typecheck(T);
+        _typecheck(U);
         C4_XASSERT(num_channels == 1u);
         C4_XASSERT(buf != nullptr);
         const uint32_t p = pos(w, h);
-        C4_XASSERT(p * sizeof(T) < buf_size);
+        C4_XASSERT(p * sizeof(U) < buf_size);
         C4_XASSERT(p < num_values());
         U *C4_RESTRICT const arr = reinterpret_cast<U *>(buf);
         arr[p] = chval;
@@ -345,6 +357,69 @@ void save_bmp(imgview const& C4_RESTRICT v)
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void vflip(wimgview & C4_RESTRICT img) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+// view for a raw YUY2 image, where each pixel has a separate luminance
+// information, but the colour information is shared between two
+// pixels.
+template<class T>
+struct basic_yuy2view;
+
+using wyuy2view = basic_yuy2view<uint8_t>;
+using yuy2view = basic_yuy2view<const uint8_t>;
+
+template<class T>
+struct basic_yuy2view
+{
+    using buffer_type = T;
+    using data_type_e = imgviewtype::data_type_e;
+
+    static_assert(sizeof(T) == 1u);
+
+    /// convert automatically to const view
+    inline operator basic_yuy2view<const T> const& () const noexcept { return *(basic_yuy2view<const T> const*)this; }
+
+public:
+
+    T* C4_RESTRICT buf = nullptr;
+    uint32_t buf_size = 0;
+
+    uint32_t width = 0;       // x, or number of columns
+    uint32_t height = 0;      // y, or number of rows
+    data_type_e data_type = imgviewtype::u8;
+
+public:
+
+    void reset(T *buf_, uint32_t sz, uint32_t width_, uint32_t height_, data_type_e data_type_)
+    {
+        buf = buf_;
+        buf_size = sz;
+        width = width_;
+        height = height_;
+        data_type = data_type_;
+        if(bytes_required() > buf_size)
+        {
+            buf = nullptr;
+            buf_size = 0;
+        }
+    }
+
+public:
+
+    C4_ALWAYS_INLINE uint32_t pixel_area() const noexcept { return width * height; }
+    C4_ALWAYS_INLINE uint32_t num_values() const noexcept { return width * height * (width * height + (width * height) / 2u); }
+    C4_ALWAYS_INLINE uint32_t bytes_required() const noexcept { return imgviewtype::data_size(data_type) * width * height * num_values(); }
+    C4_ALWAYS_INLINE uint32_t data_type_size() const noexcept { return imgviewtype::data_size(data_type); }
+    C4_ALWAYS_INLINE uint32_t num_bytes_per_channel() const { return imgviewtype::data_size(data_type); }
+
+};
+
+void convert_yuy2_to_rgb(yuy2view const& src, wimgview const& dst);
+
 
 C4_SUPPRESS_WARNING_GCC_CLANG_POP
 

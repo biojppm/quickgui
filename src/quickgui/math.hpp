@@ -63,6 +63,17 @@ C4_ALWAYS_INLINE C4_CONST constexpr auto clamp(T val, T min, T max) noexcept -> 
     return min;
 }
 
+/** std::clamp uses references. Values are better for fundamental types. */
+template<class T, T min, T max>
+C4_ALWAYS_INLINE C4_CONST constexpr auto clamp(T val) noexcept -> std::enable_if_t<std::is_fundamental_v<T>, T>
+{
+    if(C4_LIKELY(val >= min && val <= max))
+        return val;
+    else if(val > max)
+        return max;
+    return min;
+}
+
 /** std::max uses references. Values are better for fundamental types. */
 template<class T>
 C4_ALWAYS_INLINE C4_CONST constexpr auto max(T a, T b) noexcept -> std::enable_if_t<std::is_fundamental_v<T>, T>
