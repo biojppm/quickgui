@@ -56,6 +56,7 @@ bool compact_color_picker(const char * title, fcolor *color, const char *tooltip
 
 ImRect get_current_plot_rect();
 
+void set_column_padding_for_aligned_right_contents(c4::csubstr txt);
 void set_column_contents_aligned_right(c4::csubstr txt);
 void set_column_contents_aligned_right(int col, c4::csubstr txt);
 
