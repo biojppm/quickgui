@@ -357,6 +357,8 @@ void save_bmp(imgview const& C4_RESTRICT v)
 
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void vflip(wimgview & C4_RESTRICT img) noexcept;
+// swap the red and blue channels
+void swaprb(wimgview & C4_RESTRICT img) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 
 

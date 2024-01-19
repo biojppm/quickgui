@@ -26,6 +26,7 @@ struct BMPFileHeader
     uint16_t reserved2{0};                 // Reserved, always 0
     uint32_t offset_data{0};               // Start position of pixel data (bytes from the beginning of the file)
 };
+static_assert(sizeof(BMPFileHeader) == 14u);
 
 struct BMPInfoHeader
 {
@@ -43,6 +44,7 @@ struct BMPInfoHeader
     uint32_t colors_used{0};               // No. color indexes in the color table. Use 0 for the max number of colors allowed by bit_count
     uint32_t colors_important{0};          // No. of colors used for displaying the bitmap. If 0 all colors are required
 };
+static_assert(sizeof(BMPInfoHeader) == 40u);
 
 struct BMPColorHeader
 {
@@ -65,16 +67,22 @@ wimgview load_bmp(void * bmp_buf_, uint32_t bmp_buf_sz)
     C4_CHECK(file_header->file_size <= (uint32_t)bmp_buf_sz);
     C4_CHECK(file_header->offset_data < (uint32_t)bmp_buf_sz);
     BMPInfoHeader const* C4_RESTRICT info_header = (BMPInfoHeader const*)(bmp_buf + sizeof(BMPFileHeader));
-    if(info_header->bit_count != 32)
+    C4_CHECK(info_header->size == 40);
+    C4_CHECK(info_header->size == sizeof(BMPInfoHeader));
+    C4_CHECK(info_header->compression == 0); // check not compressed
+    C4_CHECK((info_header->bit_count % 8) == 0);
+    C4_CHECK(file_header->offset_data >= sizeof(BMPFileHeader) + info_header->size);
+    C4_CHECK(file_header->offset_data >= sizeof(BMPFileHeader) + sizeof(BMPInfoHeader));
+    if(file_header->offset_data >= sizeof(BMPFileHeader) + sizeof(BMPInfoHeader) + sizeof(BMPColorHeader))
     {
-        C4_CHECK(info_header->size >= sizeof(BMPInfoHeader));
-    }
-    else
-    {
+        C4_NOT_IMPLEMENTED(); // FIXME
         BMPColorHeader const* C4_RESTRICT color_header = nullptr;
-        C4_CHECK(info_header->size >= sizeof(BMPInfoHeader) + sizeof(BMPColorHeader));
         color_header = (BMPColorHeader const*)(bmp_buf + sizeof(BMPFileHeader) + sizeof(BMPInfoHeader));
-        (void)color_header;
+        C4_CHECK(color_header->red_mask == 0x0000ff00);
+        C4_CHECK(color_header->red_mask == 0x000000ff);
+        C4_CHECK(color_header->green_mask == 0x0000ff00);
+        C4_CHECK(color_header->blue_mask == 0x00ff0000);
+        C4_CHECK(color_header->alpha_mask == 0xff000000);
     }
     const bool inverted = info_header->height < 0;
     const uint32_t height = (uint32_t)(inverted ? -info_header->height : info_header->height);
@@ -239,6 +247,26 @@ void vflip(wimgview & C4_RESTRICT dst) noexcept
             src_row[w] = dst_row[w];
             dst_row[w] = tmp;
         }
+    }
+}
+
+void swaprb(wimgview & C4_RESTRICT dst) noexcept
+{
+    C4_CHECK(dst.num_channels == 3u);
+    C4_CHECK(dst.data_type == imgviewtype::u8);
+    using T = uint8_t;
+    using I = int32_t;
+    const I H = (I)dst.height;
+    const I W = (I)dst.width;
+    const I A = W * H;
+    C4_CHECK(dst.buf_size >= 3u * A);
+    T* C4_RESTRICT dst_buf = (T*) dst.buf;
+    for(I i = 0; i < A; ++i)
+    {
+        T * C4_RESTRICT pxvals = dst_buf + 3 * i;
+        const T tmp = pxvals[0];
+        pxvals[0] = pxvals[2];
+        pxvals[2] = tmp;
     }
 }
 
