@@ -259,7 +259,7 @@ void swaprb(wimgview & C4_RESTRICT dst) noexcept
     const I H = (I)dst.height;
     const I W = (I)dst.width;
     const I A = W * H;
-    C4_CHECK(dst.buf_size >= 3u * A);
+    C4_CHECK((I)dst.buf_size >= I(3) * A);
     T* C4_RESTRICT dst_buf = (T*) dst.buf;
     for(I i = 0; i < A; ++i)
     {
