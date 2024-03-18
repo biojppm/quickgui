@@ -366,9 +366,9 @@ void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-// view for a raw YUY2 image, where each pixel has a separate luminance
-// information, but the colour information is shared between two
-// pixels.
+// view for a raw YUY2 image, where each pixel has a separate luma
+// (luminance information), but chroma (the colour information) is
+// shared between two pixels.
 template<class T>
 struct basic_yuy2view;
 
@@ -414,7 +414,7 @@ public:
 public:
 
     C4_ALWAYS_INLINE uint32_t pixel_area() const noexcept { return width * height; }
-    C4_ALWAYS_INLINE uint32_t num_values() const noexcept { return width * height * (width * height + (width * height) / 2u); }
+    C4_ALWAYS_INLINE uint32_t num_values() const noexcept { return width * height + ((width * height) / 2u); }
     C4_ALWAYS_INLINE uint32_t bytes_required() const noexcept { return imgviewtype::data_size(data_type) * width * height * num_values(); }
     C4_ALWAYS_INLINE uint32_t data_type_size() const noexcept { return imgviewtype::data_size(data_type); }
     C4_ALWAYS_INLINE uint32_t num_bytes_per_channel() const { return imgviewtype::data_size(data_type); }
