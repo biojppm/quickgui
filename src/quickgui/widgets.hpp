@@ -80,11 +80,11 @@ struct FilePicker
             return nullptr;
         return path;
     }
-    const char *pick_dir(const char* btn_txt="Select")
+    const char *pick_dir(const char* btn_txt="Select", const char *dir=nullptr)
     {
         bool open = ImGui::Button(btn_txt);
         set_hover_tooltip("Click to select");
-        const char *path = dialog.chooseFolderDialog(open, dialog.getLastDirectory());
+        const char *path = dialog.chooseFolderDialog(open, dir ? dir : dialog.getLastDirectory());
         if(dialog.hasUserJustCancelledDialog() || !path || strlen(path) == 0)
             return nullptr;
         return path;
