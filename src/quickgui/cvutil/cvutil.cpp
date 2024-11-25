@@ -45,6 +45,15 @@ cvtypespecs const& cvtype_lookup(int cvtypeint)
     return cvtypes[0];
 }
 
+cvtypespecs const& cvtype_lookup(imgview const& view)
+{
+    for(auto const& cvt : cvtypes)
+        if(cvt.data_type == view.data_type && cvt.num_channels == view.num_channels)
+            return cvt;
+    C4_ERROR("data type not found/implemented");
+    return cvtypes[0];
+}
+
 int cvformat(imgview const& view)
 {
     for(auto const& cvt : cvtypes)
@@ -78,7 +87,7 @@ int cvtype_to_video(int cvtypeint)
     return cvtypeint;
 }
 
-const cv::Mat cvmat(imgview const& view)
+cv::Mat cvmat(imgview const& view)
 {
     cv::Size matsize(/*cols*/(int)view.width, /*rows*/(int)view.height);
     C4_SUPPRESS_WARNING_GCC_CLANG_WITH_PUSH("-Wcast-qual")
@@ -89,13 +98,43 @@ const cv::Mat cvmat(imgview const& view)
     return matview;
 }
 
-cv::Mat cvmat(wimgview & view)
+cv::Mat cvmat(wimgview const& view)
 {
     cv::Size matsize(/*cols*/(int)view.width, /*rows*/(int)view.height);
     cv::Mat matview(matsize, cvformat(view), view.buf);
     // ensure that the cvmat is pointing at our data
     C4_ASSERT(same_mat(matview, view));
     return matview;
+}
+
+imgview cvmat_to_imgview(const cv::Mat& mat)
+{
+    C4_CHECK(mat.dims == 2);
+    C4_CHECK(mat.isContinuous());
+    cvtypespecs const& specs = cvtype_lookup(mat.type());
+    imgview view;
+    view.buf = (const uint8_t*)mat.datastart;
+    view.buf_size = (size_t)(mat.dataend - mat.datastart);
+    view.width = mat.cols;
+    view.height = mat.rows;
+    view.num_channels = specs.num_channels;
+    view.data_type = specs.data_type;
+    return view;
+}
+
+wimgview cvmat_to_imgview(cv::Mat& mat)
+{
+    C4_CHECK(mat.dims == 2);
+    C4_CHECK(mat.isContinuous());
+    cvtypespecs const& specs = cvtype_lookup(mat.type());
+    wimgview view;
+    view.buf = (uint8_t*)mat.datastart;
+    view.buf_size = (size_t)(mat.dataend - mat.datastart);
+    view.width = mat.cols;
+    view.height = mat.rows;
+    view.num_channels = specs.num_channels;
+    view.data_type = specs.data_type;
+    return view;
 }
 
 bool same_mat(cv::Mat const& mat, imgview const& view)

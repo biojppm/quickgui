@@ -25,12 +25,15 @@ struct cvtypespecs
 };
 
 cvtypespecs const& cvtype_lookup(int cvtypeint);
+cvtypespecs const& cvtype_lookup(imgview const& view);
 c4::csubstr cvtype_str(int cvtypeint);
 size_t cvtype_bytes(int cvtypeint);
 int cvtype_to_video(int cvtypeint);
 bool same_mat(cv::Mat const& mat, imgview const& view);
-const cv::Mat cvmat(imgview const& view);
-cv::Mat cvmat(wimgview & view);
+cv::Mat cvmat(imgview const& view);
+cv::Mat cvmat(wimgview const& view);
+imgview cvmat_to_imgview(const cv::Mat& mat);
+wimgview cvmat_to_imgview(cv::Mat& mat);
 
 } // namespace quickgui
 
