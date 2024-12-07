@@ -49,6 +49,18 @@ void pop_disabled(bool disabled)
         pop_disabled();
 }
 
+void push_enabled(bool enabled)
+{
+    if(!enabled)
+        push_disabled();
+}
+
+void pop_enabled(bool enabled)
+{
+    if(!enabled)
+        pop_disabled();
+}
+
 
 // Make the UI compact
 void push_compact()

@@ -26,6 +26,9 @@ void pop_disabled();
 void push_disabled(bool disabled);
 void pop_disabled(bool disabled);
 
+void push_enabled(bool enabled);
+void pop_enabled(bool enabled);
+
 void push_compact();
 void pop_compact();
 
@@ -34,6 +37,13 @@ struct DisabledScope
     bool disabled;
     DisabledScope(bool disabled_) : disabled(disabled_) { push_disabled(disabled); }
     ~DisabledScope() { pop_disabled(disabled); }
+};
+
+struct EnabledScope
+{
+    bool enabled;
+    EnabledScope(bool enabled_) : enabled(enabled_) { push_enabled(enabled); }
+    ~EnabledScope() { pop_enabled(enabled); }
 };
 
 struct CompactScope
