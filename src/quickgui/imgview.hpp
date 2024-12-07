@@ -324,8 +324,13 @@ wimgview make_wimgview(CharContainer *container, uint32_t width, uint32_t height
 wimgview load_bmp(void *buf, uint32_t bufsz);
 uint32_t save_bmp(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_sz);
 
-template<class CharContainer>
-void save_bmp(CharContainer *container, imgview const& C4_RESTRICT v)
+// PFM: https://www.pauldebevec.com/Research/HDR/PFM/
+wimgview load_pfm(void *buf, uint32_t bufsz);
+uint32_t save_pfm(imgview const& C4_RESTRICT v, void *bmp_buf, uint32_t bmp_buf_sz);
+
+namespace detail {
+template<class CharContainer, class Fn>
+void save_(CharContainer *container, imgview const& C4_RESTRICT v, Fn &&fn)
 {
     static_assert(sizeof(typename CharContainer::value_type) == 1u);
     uint32_t bytes_required = save_bmp(v, container->data(), container->size());
@@ -336,17 +341,41 @@ void save_bmp(CharContainer *container, imgview const& C4_RESTRICT v)
     else
     {
         container->resize(bytes_required);
-        bytes_required = save_bmp(v, container->data(), container->size());
+        bytes_required = fn();
         C4_ASSERT(bytes_required <= container->size());
     }
 }
+} // namespace detail
 
+template<class CharContainer>
+void save_bmp(CharContainer *container, imgview const& C4_RESTRICT v)
+{
+    detail::save_(container, v, [&]{
+        return save_bmp(v, container->data(), container->size());
+    });
+}
 template<class CharContainer>
 void save_bmp(imgview const& C4_RESTRICT v)
 {
     CharContainer c;
     c.resize(v.bytes_required() + 1024);
     save_bmp(&c, v);
+    return c;
+}
+
+template<class CharContainer>
+void save_pfm(CharContainer *container, imgview const& C4_RESTRICT v)
+{
+    detail::save_(container, v, [&]{
+        return save_pfm(v, container->data(), container->size());
+    });
+}
+template<class CharContainer>
+void save_pfm(imgview const& C4_RESTRICT v)
+{
+    CharContainer c;
+    c.resize(v.bytes_required() + 1024);
+    save_pfm(&c, v);
     return c;
 }
 

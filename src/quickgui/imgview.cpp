@@ -3,6 +3,7 @@
 #include "quickgui/math.hpp"
 #include <c4/types.hpp>
 #include <c4/error.hpp>
+#include <c4/format.hpp>
 #include <c4/memory_util.hpp>
 #include <cstring>
 
@@ -173,6 +174,75 @@ size_t save_bmp(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
     }
     return bmp_buf_pos;
 }
+
+
+//-----------------------------------------------------------------------------
+
+wimgview load_pfm(void * bmp_buf_, uint32_t bmp_buf_sz)
+{
+    // https://www.pauldebevec.com/Research/HDR/PFM/
+    char *C4_RESTRICT bmp_buf = (char *)bmp_buf_;
+    C4_CHECK(bmp_buf_sz > 3u);
+    c4::csubstr buf(bmp_buf, bmp_buf_sz);
+    uint32_t num_channels = {};
+    if(buf.begins_with("PF"))
+        num_channels = 3u;
+    else if(buf.begins_with("Pf"))
+        num_channels = 1u;
+    else
+        C4_ERROR("unknown pfm type");
+    C4_CHECK(buf[2] == '\r');
+    // done with the first line
+    buf = buf.sub(3);
+    size_t nextcr = buf.first_of("\r");
+    C4_CHECK(nextcr != c4::csubstr::npos);
+    c4::csubstr second_line = buf.first(nextcr);
+    C4_CHECK(second_line.len > 0);
+    C4_CHECK(second_line.len < buf.len);
+    C4_CHECK(!second_line.ends_with('\r'));
+    uint32_t width = {};
+    uint32_t height = {};
+    char space = {};
+    size_t numchars = c4::uncat(second_line, width, space, height);
+    C4_CHECK(numchars == second_line.len);
+    C4_CHECK(width > 0);
+    C4_CHECK(height > 0);
+    const size_t num_bytes = (size_t)width * (size_t)height * (size_t)num_channels * sizeof(float);
+    // done with the second line
+    buf = buf.sub(nextcr + 1u);
+    nextcr = buf.first_of("\r");
+    C4_CHECK(nextcr != c4::csubstr::npos);
+    c4::csubstr third_line = buf.first(nextcr);
+    float endian_number = {};
+    numchars = c4::uncat(third_line, endian_number);
+    C4_CHECK(numchars == third_line.len);
+    const bool little_endian = endian_number < 0.f;
+    C4_NOT_IMPLEMENTED_IF(!little_endian);
+    // done with the third line
+    buf = buf.sub(nextcr + 1u);
+    C4_CHECK(bmp_buf_sz > buf.len);
+    C4_CHECK(buf.len >= num_bytes);
+    wimgview v = make_wimgview(
+        /*buf*/(char*)buf.str,
+        /*bufsz*/(uint32_t)(bmp_buf_sz - buf.len),
+        /*width*/width,
+        /*height*/height,
+        /*num_channels*/num_channels,
+        /*data_type*/imgviewtype::f32);
+    // the data is specified in left to right, bottom to top order.
+    // flip in place
+    vflip(v);
+    return v;
+}
+
+size_t save_pfm(imgview const& C4_RESTRICT v, char *bmp_buf, size_t bmp_buf_sz)
+{
+    C4_NOT_IMPLEMENTED();
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 
 
 imgview make_imgview(void const* buf, uint32_t sz, imgview const& blueprint)
