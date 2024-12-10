@@ -1,11 +1,12 @@
 #ifndef QUICKGUI_OVERLAY_CANVAS_HPP_
 #define QUICKGUI_OVERLAY_CANVAS_HPP_
 
-#include <quickgui/primitive_draw_list.hpp>
-#include <quickgui/math.hpp>
-#include <quickgui/color.hpp>
+#include "quickgui/imgui.hpp"
+#include "quickgui/math.hpp"
+#include <vector>
 
 namespace quickgui {
+struct PrimitiveDrawList;
 struct OverlayCanvas
 {
     std::vector<ImVec2> m_transformed_points;

@@ -1,4 +1,8 @@
-#include "overlay_canvas.hpp"
+#include "quickgui/overlay_canvas.hpp"
+
+#include "quickgui/primitive_draw_list.hpp"
+#include "quickgui/math.hpp"
+#include "quickgui/color.hpp"
 
 namespace quickgui {
 
@@ -20,9 +24,8 @@ C4_ALWAYS_INLINE C4_CONST ucolor shadow(ucolor c) noexcept
 void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_subject_size,
                          ImVec2 canvas_position, ImVec2 canvas_size, ImDrawList *draw_list)
 {
-    // https://github.com/ocornut/imgui/issues/1415
     // tr (ie transform): a lambda to transform from subject coordinates to canvas coordinates
-    auto tr = [ssize=primitives_subject_size, csize=canvas_size, cpos=canvas_position](ImVec2 v){
+    auto trpos = [ssize=primitives_subject_size, csize=canvas_size, cpos=canvas_position](ImVec2 v){
         return cpos + csize * (v / ssize);
     };
     // transform a length
@@ -33,6 +36,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
     auto sh = [offs=_shadow_offset(canvas_size)](ImVec2 p){
         return p + offs;
     };
+    // https://github.com/ocornut/imgui/issues/1415
     for(PrimitiveDrawList::Primitive const& prim : primitives.m_primitives)
     {
         switch(prim.type)
@@ -41,7 +45,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         {
             const char *first = &primitives.m_characters[prim.text.first_char];
             const char *last = first + prim.text.num_chars;
-            const ImVec2 pos = tr(prim.text.p);
+            const ImVec2 pos = trpos(prim.text.p);
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow > 0.f)
                 draw_list->AddText(sh(pos), shad, first, last);
@@ -51,7 +55,7 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         case PrimitiveDrawList::point:
         {
             const float hps = _half_point_size(canvas_size);
-            const ImVec2 p = tr(prim.point.p);
+            const ImVec2 p = trpos(prim.point.p);
             const ImVec2 topl = p + ImVec2{-hps, -hps};
             const ImVec2 topr = p + ImVec2{ hps, -hps};
             const ImVec2 botr = p + ImVec2{ hps,  hps};
@@ -59,14 +63,18 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow > 0.f)
             {
+                const ImVec2 stopl = sh(topl);
+                const ImVec2 stopr = sh(topr);
+                const ImVec2 sbotr = sh(botr);
+                const ImVec2 sbotl = sh(botl);
                 // draw the square
-                draw_list->AddLine(sh(topl), sh(topr), shad, prim.thickness);
-                draw_list->AddLine(sh(topr), sh(botr), shad, prim.thickness);
-                draw_list->AddLine(sh(botr), sh(botl), shad, prim.thickness);
-                draw_list->AddLine(sh(botl), sh(topl), shad, prim.thickness);
+                draw_list->AddLine(stopl, stopr, shad, prim.thickness);
+                draw_list->AddLine(stopr, sbotr, shad, prim.thickness);
+                draw_list->AddLine(sbotr, sbotl, shad, prim.thickness);
+                draw_list->AddLine(sbotl, stopl, shad, prim.thickness);
                 // draw diagonals across the square
-                draw_list->AddLine(sh(topl), sh(botr), shad, prim.thickness);
-                draw_list->AddLine(sh(botl), sh(topr), shad, prim.thickness);
+                draw_list->AddLine(stopl, sbotr, shad, prim.thickness);
+                draw_list->AddLine(sbotl, stopr, shad, prim.thickness);
             }
             // draw the square
             draw_list->AddLine(topl, topr, prim.color, prim.thickness);
@@ -80,8 +88,8 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         }
         case PrimitiveDrawList::line:
         {
-            const ImVec2 p = tr(prim.line.p);
-            const ImVec2 q = tr(prim.line.q);
+            const ImVec2 p = trpos(prim.line.p);
+            const ImVec2 q = trpos(prim.line.q);
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow > 0.f)
                 draw_list->AddLine(sh(p), sh(q), shad, prim.thickness);
@@ -90,8 +98,8 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         }
         case PrimitiveDrawList::rect:
         {
-            const ImVec2 min = tr(prim.rect.r.Min);
-            const ImVec2 max = tr(prim.rect.r.Max);
+            const ImVec2 min = trpos(prim.rect.r.Min);
+            const ImVec2 max = trpos(prim.rect.r.Max);
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow > 0.f)
                 draw_list->AddRect(sh(min), sh(max), shad);
@@ -100,8 +108,8 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
         }
         case PrimitiveDrawList::rect_filled:
         {
-            const ImVec2 min = tr(prim.rect.r.Min);
-            const ImVec2 max = tr(prim.rect.r.Max);
+            const ImVec2 min = trpos(prim.rect.r.Min);
+            const ImVec2 max = trpos(prim.rect.r.Max);
             // it is filled - no shadow needed
             draw_list->AddRectFilled(min, max, prim.color);
             break;
@@ -116,18 +124,18 @@ void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_
                 {
                     const ucolor shad = shadow(prim.color);
                     for(uint32_t p = prim.poly.first_point; p < prim.poly.num_points; ++p)
-                        m_transformed_points[p] = sh(tr(primitives.m_points[p]));
+                        m_transformed_points[p] = sh(trpos(primitives.m_points[p]));
                     draw_list->AddPolyline(&m_transformed_points[0], (int)prim.poly.num_points, shad, /*flags*/{}, prim.thickness);
                 }
                 for(uint32_t p = prim.poly.first_point; p < prim.poly.num_points; ++p)
-                    m_transformed_points[p] = tr(primitives.m_points[p]);
+                    m_transformed_points[p] = trpos(primitives.m_points[p]);
                 draw_list->AddPolyline(&m_transformed_points[0], (int)prim.poly.num_points, prim.color, /*flags*/{}, prim.thickness);
             }
             break;
         }
         case PrimitiveDrawList::circle:
         {
-            const ImVec2 center = tr(prim.circle.center);
+            const ImVec2 center = trpos(prim.circle.center);
             const float radius = trlen(prim.circle.radius);
             const ucolor shad = shadow(prim.color);
             if(s_draw_shadow > 0.f)
