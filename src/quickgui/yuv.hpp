@@ -47,6 +47,14 @@ C4_CONST C4_ALWAYS_INLINE yuv3 to_yuv_sdtv(fcolor3 c) noexcept
     ret.v =  0.615f   * c.r + -0.51499f * c.g + -0.10001f * c.b;
     return ret;
 }
+C4_CONST C4_ALWAYS_INLINE float to_luminance_sdtv(fcolor c) noexcept
+{
+    return 0.299f * c.r + 0.58700f * c.g + 0.11400f * c.b;
+}
+C4_CONST C4_ALWAYS_INLINE float to_luminance_sdtv(fcolor3 c) noexcept
+{
+    return 0.299f * c.r + 0.58700f * c.g + 0.11400f * c.b;
+}
 
 /** https://en.wikipedia.org/wiki/YUV */
 C4_CONST C4_ALWAYS_INLINE fcolor to_rgb_sdtv(yuv c) noexcept
@@ -86,6 +94,14 @@ C4_CONST C4_ALWAYS_INLINE yuv3 to_yuv_hdtv(fcolor3 c) noexcept
     ret.u = -0.09991f * c.r + -0.33609f * c.g +  0.43600f * c.b;
     ret.v =  0.61500f * c.r + -0.55861f * c.g + -0.05639f * c.b;
     return ret;
+}
+C4_CONST C4_ALWAYS_INLINE float to_luminance_hdtv(fcolor c) noexcept
+{
+    return 0.21260f * c.r + 0.71520f * c.g + 0.07720f * c.b;
+}
+C4_CONST C4_ALWAYS_INLINE float to_luminance_hdtv(fcolor3 c) noexcept
+{
+    return 0.21260f * c.r + 0.71520f * c.g + 0.07720f * c.b;
 }
 
 /** https://en.wikipedia.org/wiki/YUV */
