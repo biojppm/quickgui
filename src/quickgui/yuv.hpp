@@ -32,9 +32,9 @@ struct yuv3
 C4_CONST C4_ALWAYS_INLINE yuv to_yuv_sdtv(fcolor c) noexcept
 {
     yuv ret;
-    ret.y =  0.299f   * c.r +  0.58700f * c.g +  0.11400f * c.b;
+    ret.y =  0.29900f * c.r +  0.58700f * c.g +  0.11400f * c.b;
     ret.u = -0.14713f * c.r + -0.28886f * c.g +  0.43600f * c.b;
-    ret.v =  0.615f   * c.r + -0.51499f * c.g + -0.10001f * c.b;
+    ret.v =  0.61500f * c.r + -0.51499f * c.g + -0.10001f * c.b;
     ret.a = c.a;
     return ret;
 }
@@ -42,18 +42,18 @@ C4_CONST C4_ALWAYS_INLINE yuv to_yuv_sdtv(fcolor c) noexcept
 C4_CONST C4_ALWAYS_INLINE yuv3 to_yuv_sdtv(fcolor3 c) noexcept
 {
     yuv3 ret;
-    ret.y =  0.299f   * c.r +  0.58700f * c.g +  0.11400f * c.b;
+    ret.y =  0.29900f * c.r +  0.58700f * c.g +  0.11400f * c.b;
     ret.u = -0.14713f * c.r + -0.28886f * c.g +  0.43600f * c.b;
-    ret.v =  0.615f   * c.r + -0.51499f * c.g + -0.10001f * c.b;
+    ret.v =  0.61500f * c.r + -0.51499f * c.g + -0.10001f * c.b;
     return ret;
 }
 C4_CONST C4_ALWAYS_INLINE float to_luminance_sdtv(fcolor c) noexcept
 {
-    return 0.299f * c.r + 0.58700f * c.g + 0.11400f * c.b;
+    return 0.299f * c.r + 0.587f * c.g + 0.114f * c.b;
 }
 C4_CONST C4_ALWAYS_INLINE float to_luminance_sdtv(fcolor3 c) noexcept
 {
-    return 0.299f * c.r + 0.58700f * c.g + 0.11400f * c.b;
+    return 0.299f * c.r + 0.587f * c.g + 0.114f * c.b;
 }
 
 /** https://en.wikipedia.org/wiki/YUV */
@@ -97,11 +97,11 @@ C4_CONST C4_ALWAYS_INLINE yuv3 to_yuv_hdtv(fcolor3 c) noexcept
 }
 C4_CONST C4_ALWAYS_INLINE float to_luminance_hdtv(fcolor c) noexcept
 {
-    return 0.21260f * c.r + 0.71520f * c.g + 0.07720f * c.b;
+    return 0.2126f * c.r + 0.7152f * c.g + 0.0772f * c.b;
 }
 C4_CONST C4_ALWAYS_INLINE float to_luminance_hdtv(fcolor3 c) noexcept
 {
-    return 0.21260f * c.r + 0.71520f * c.g + 0.07720f * c.b;
+    return 0.2126f * c.r + 0.7152f * c.g + 0.0772f * c.b;
 }
 
 /** https://en.wikipedia.org/wiki/YUV */

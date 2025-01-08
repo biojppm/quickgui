@@ -60,5 +60,8 @@ C4_ALWAYS_INLINE C4_CONST ImVec2 versor(ImVec2 vec) noexcept { float rs = 1.f / 
 C4_ALWAYS_INLINE C4_CONST float  maxof(ImVec2 vec) noexcept { return vec.x > vec.y ? vec.x : vec.y; }
 C4_ALWAYS_INLINE C4_CONST float  minof(ImVec2 vec) noexcept { return vec.x < vec.y ? vec.x : vec.y; }
 
+C4_ALWAYS_INLINE C4_CONST ImVec2 shiftx(ImVec2 vec, float deltax) noexcept { return {vec.x + deltax, vec.y}; }
+C4_ALWAYS_INLINE C4_CONST ImVec2 shifty(ImVec2 vec, float deltay) noexcept { return {vec.x, vec.y + deltay}; }
+
 
 #endif /* QUICKGUI_GUI_IMGUI_HPP_ */

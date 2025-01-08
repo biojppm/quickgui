@@ -19,7 +19,20 @@ C4_ALWAYS_INLINE C4_CONST ucolor shadow(ucolor c) noexcept
     ret.a = UINT8_C(0xff);
     return ret;
 }
+
+static float _half_point_size(ImVec2 canvas_size) noexcept
+{
+    const float canvas_dim = quickgui::min(canvas_size.x, canvas_size.y);
+    return 0.5f * quickgui::max(OverlayCanvas::s_point_square_size * canvas_dim, OverlayCanvas::s_min_point_square_size);
 }
+
+static ImVec2 _shadow_offset(ImVec2 canvas_size) noexcept
+{
+    const float canvas_dim = quickgui::max(canvas_size.x, canvas_size.y);
+    return ImVec2{canvas_dim * OverlayCanvas::s_draw_shadow_offset, canvas_dim * OverlayCanvas::s_draw_shadow_offset};
+}
+} // anon namespace
+
 
 void OverlayCanvas::draw(PrimitiveDrawList const& primitives, ImVec2 primitives_subject_size,
                          ImVec2 canvas_position, ImVec2 canvas_size, ImDrawList *draw_list)

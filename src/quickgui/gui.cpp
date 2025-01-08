@@ -706,6 +706,11 @@ ImVec2 GuiImage::size_with_mindim(float minval, float scale) const
     return (w < h) ? size_with_width(minval, scale) : size_with_height(minval, scale);
 }
 
+void GuiImage::display() const
+{
+    ImGui::Image((ImTextureID)desc_set, size(1.f), uv_topl, uv_botr, tint_color, border_color);
+}
+
 void GuiImage::display(float scale) const
 {
     ImGui::Image((ImTextureID)desc_set, size(scale), uv_topl, uv_botr, tint_color, border_color);
@@ -714,6 +719,21 @@ void GuiImage::display(float scale) const
 void GuiImage::display(ImVec2 display_size) const
 {
     ImGui::Image((ImTextureID)desc_set, display_size, uv_topl, uv_botr, tint_color, border_color);
+}
+
+void GuiImage::displaySub(ImVec2 topl, ImVec2 botr) const
+{
+    ImGui::Image((ImTextureID)desc_set, size(1.f), topl, botr, tint_color, border_color);
+}
+
+void GuiImage::displaySub(ImVec2 topl, ImVec2 botr, float scale) const
+{
+    ImGui::Image((ImTextureID)desc_set, size(scale), topl, botr, tint_color, border_color);
+}
+
+void GuiImage::displaySub(ImVec2 topl, ImVec2 botr, ImVec2 display_size) const
+{
+    ImGui::Image((ImTextureID)desc_set, display_size, topl, botr, tint_color, border_color);
 }
 
 void GuiAssets::acquire(VkCommandBuffer cmd_buf)

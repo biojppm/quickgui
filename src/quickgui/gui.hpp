@@ -63,8 +63,12 @@ struct GuiImage
     void load(const char *filename, ccharspan img_data, rhi::ImageLayout const& layout, rhi::sampler_id sampler, VkCommandBuffer cmd_buf, rhi::UploadBuffer *upload_buffer);
     void destroy();
     rhi::ImageLayout const& layout() const { return rhi::g_rhi.get_image(img_id).layout; }
-    void display(float scale=1.f) const;
+    void display() const; ///< display with scale=1
+    void display(float scale) const;
     void display(ImVec2 display_size) const;
+    void displaySub(ImVec2 topl, ImVec2 botr) const; // display with scale=1
+    void displaySub(ImVec2 topl, ImVec2 botr, float scale) const;
+    void displaySub(ImVec2 topl, ImVec2 botr, ImVec2 display_size) const;
     ImVec2 size() const;
     ImVec2 size(float scale) const;
     ImVec2 size_with_width(float width, float scale=1.f) const;
