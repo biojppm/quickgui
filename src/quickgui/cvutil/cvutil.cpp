@@ -8,17 +8,29 @@ namespace quickgui {
 namespace {
 static inline constexpr cvtypespecs cvtypes[] = {
     #define _(ty, dt, nc) cvtypespecs{ty, imgviewtype::dt, nc, #ty}
-        _(CV_8U   , u8, 1),
-        _(CV_8UC1 , u8, 1),
-        _(CV_8UC2 , u8, 2),
-        _(CV_8UC3 , u8, 3),
-        _(CV_8UC4 , u8, 4),
+        _(CV_8U  , u8, 1),
+        _(CV_8UC1, u8, 1),
+        _(CV_8UC2, u8, 2),
+        _(CV_8UC3, u8, 3),
+        _(CV_8UC4, u8, 4),
         //
-        _(CV_8S   , i8, 1),
-        _(CV_8SC1 , i8, 1),
-        _(CV_8SC2 , i8, 2),
-        _(CV_8SC3 , i8, 3),
-        _(CV_8SC4 , i8, 4),
+        _(CV_8S  , i8, 1),
+        _(CV_8SC1, i8, 1),
+        _(CV_8SC2, i8, 2),
+        _(CV_8SC3, i8, 3),
+        _(CV_8SC4, i8, 4),
+        //
+        _(CV_16U  , u16, 1),
+        _(CV_16UC1, u16, 1),
+        _(CV_16UC2, u16, 2),
+        _(CV_16UC3, u16, 3),
+        _(CV_16UC4, u16, 4),
+        //
+        _(CV_16S  , i16, 1),
+        _(CV_16SC1, i16, 1),
+        _(CV_16SC2, i16, 2),
+        _(CV_16SC3, i16, 3),
+        _(CV_16SC4, i16, 4),
         //
         _(CV_32S  , i32, 1),
         _(CV_32SC1, i32, 1),
@@ -31,6 +43,12 @@ static inline constexpr cvtypespecs cvtypes[] = {
         _(CV_32FC2, f32, 2),
         _(CV_32FC3, f32, 3),
         _(CV_32FC4, f32, 4),
+        //
+        _(CV_64F  , f64, 1),
+        _(CV_64FC1, f64, 1),
+        _(CV_64FC2, f64, 2),
+        _(CV_64FC3, f64, 3),
+        _(CV_64FC4, f64, 4),
     #undef _
 };
 } // namespace

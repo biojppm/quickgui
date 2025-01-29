@@ -16,9 +16,13 @@ struct imgviewtype
         u8,
         i8,
         u16,
+        i16,
         u32,
         i32,
         f32,
+        u64,
+        i64,
+        f64,
         // nothing else is supported
     } data_type_e;
 
@@ -30,10 +34,15 @@ struct imgviewtype
         case i8:
             return 1u;
         case u16:
+        case i16:
             return 2u;
         case u32:
         case i32:
         case f32:
+            return 4u;
+        case u64:
+        case i64:
+        case f64:
             return 4u;
         default:
             break;
@@ -51,12 +60,16 @@ struct imgviewtype
             return i8;
         else if constexpr(std::is_same_v<T, uint16_t>)
             return u16;
+        else if constexpr(std::is_same_v<T, int16_t>)
+            return i16;
         if constexpr(std::is_same_v<T, uint32_t>)
             return u32;
         else if constexpr(std::is_same_v<T, int32_t>)
             return i32;
         else if constexpr(std::is_same_v<T, float>)
             return f32;
+        else if constexpr(std::is_same_v<T, double>)
+            return f64;
         else
             C4_STATIC_ERROR(T, "invalid type");
         return u8;

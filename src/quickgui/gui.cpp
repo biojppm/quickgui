@@ -105,7 +105,6 @@ VkFormat imgview_format(imgview const& iv)
 }
 VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels)
 {
-    C4_ASSERT(num_channels > 0);
     static constexpr const VkFormat formats[] = {
         // u8
         VK_FORMAT_R8_UNORM,
@@ -122,6 +121,11 @@ VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels)
         VK_FORMAT_R16G16_UNORM,
         VK_FORMAT_R16G16B16_UNORM,
         VK_FORMAT_R16G16B16A16_UNORM,
+        // i16
+        VK_FORMAT_R16_SNORM,
+        VK_FORMAT_R16G16_SNORM,
+        VK_FORMAT_R16G16B16_SNORM,
+        VK_FORMAT_R16G16B16A16_SNORM,
         // u32
         VK_FORMAT_R32_UINT,
         VK_FORMAT_R32G32_UINT,
@@ -141,10 +145,15 @@ VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels)
     static_assert(imgviewtype::u8 == 0);
     static_assert(imgviewtype::i8 == 1);
     static_assert(imgviewtype::u16 == 2);
-    static_assert(imgviewtype::u32 == 3);
-    static_assert(imgviewtype::i32 == 4);
-    static_assert(imgviewtype::f32 == 5);
-    static_assert(C4_COUNTOF(formats) >= 24);
+    static_assert(imgviewtype::i16 == 3);
+    static_assert(imgviewtype::u32 == 4);
+    static_assert(imgviewtype::i32 == 5);
+    static_assert(imgviewtype::f32 == 6);
+    static_assert(C4_COUNTOF(formats) >= 28);
+    C4_ASSERT(type >= 0);
+    C4_ASSERT(type <= 6);
+    C4_ASSERT(num_channels > 0);
+    C4_ASSERT(num_channels <= 4);
     return formats[4 * type + (int)num_channels - 1];
 }
 

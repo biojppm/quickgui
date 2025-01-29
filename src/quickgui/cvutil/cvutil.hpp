@@ -26,6 +26,30 @@ struct cvtypespecs
 
 cvtypespecs const& cvtype_lookup(int cvtypeint);
 cvtypespecs const& cvtype_lookup(imgview const& view);
+template<class T>
+cvtypespecs cvtype_lookup() noexcept
+{
+    if constexpr(std::is_same_v<T, uint8_t>)
+        return cvtype_lookup(CV_8U);
+    else if constexpr(std::is_same_v<T, int8_t>)
+        return cvtype_lookup(CV_8S);
+    else if constexpr(std::is_same_v<T, uint16_t>)
+        return cvtype_lookup(CV_16U);
+    else if constexpr(std::is_same_v<T, int16_t>)
+        return cvtype_lookup(CV_16S);
+    else if constexpr(std::is_same_v<T, uint32_t>)
+        C4_STATIC_ERROR(T, "invalid type");
+    else if constexpr(std::is_same_v<T, int32_t>)
+        return cvtype_lookup(CV_32S);
+    else if constexpr(std::is_same_v<T, float>)
+        return cvtype_lookup(CV_32F);
+    else if constexpr(std::is_same_v<T, double>)
+        return cvtype_lookup(CV_64F);
+    else
+        C4_STATIC_ERROR(T, "invalid type");
+    return {};
+}
+
 c4::csubstr cvtype_str(int cvtypeint);
 size_t cvtype_bytes(int cvtypeint);
 int cvtype_to_video(int cvtypeint);

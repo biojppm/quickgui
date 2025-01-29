@@ -582,6 +582,8 @@ uint32_t vk_num_bytes_per_pixel(VkFormat f)
         case VK_FORMAT_R8G8_UNORM:
         case VK_FORMAT_R8G8_SSCALED:
         case VK_FORMAT_R8G8_USCALED:
+        case VK_FORMAT_R16_SNORM:
+        case VK_FORMAT_R16_UNORM:
             return UINT32_C(2);
         case VK_FORMAT_R8G8B8_SINT:
         case VK_FORMAT_R8G8B8_UINT:
