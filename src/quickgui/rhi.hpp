@@ -360,7 +360,7 @@ struct UploadBuffer
     void destroy(Rhi &rhi);
     void clear() { m_pos = 0; }
     [[nodiscard]] VkDeviceSize require(Rhi &rhi, VkDeviceSize num_bytes);
-    [[nodiscard]] VkDeviceSize add(Rhi &rhi, void const *mem, VkDeviceSize sz);
+    [[nodiscard]] VkDeviceSize add(Rhi &rhi, void const *mem, VkDeviceSize sz, VkDeviceSize texelSz);
 };
 
 
@@ -379,7 +379,7 @@ struct Rhi
     SamplerCollection             m_samplers;
     ImageCollection               m_images;
     BufferCollection              m_buffers;
-    size_t                        m_non_coherent_atom_size;
+    VkDeviceSize                  m_non_coherent_atom_size;
 
     UploadBuffer                  m_upload_buffer;
     bool                          m_upload_buffer_in_use;
@@ -392,7 +392,7 @@ public:
 
 public:
 
-    size_t required_buffer_size(size_t wanted) const;
+    VkDeviceSize required_buffer_size(VkDeviceSize wanted, VkDeviceSize texelSize) const;
     size_t use_upload_buffer_with(size_t upload_size);
     void   upload_image(image_id id, ImageLayout const& layout, ccharspan tex_data, VkCommandBuffer cmdbuf, UploadBuffer *upload_buffer, VkDeviceSize upload_buffer_offset);
     void   upload_image(image_id id, ImageLayout const& layout, ccharspan tex_data, VkCommandBuffer cmdbuf);

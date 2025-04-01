@@ -11,6 +11,7 @@
 #include <c4/fs/fs.hpp>
 #include "quickgui/sdl.hpp"
 #include <SDL_vulkan.h>
+#include <numeric>
 
 //#define IMGUI_UNLIMITED_FRAME_RATE
 #ifndef QUICKGUI_ENABLE_VULKAN_DEBUG
@@ -548,7 +549,7 @@ void check_vk_result(VkResult err)
         return;
     QUICKGUI_LOGF("[vulkan] Error: VkResult={}: {}\n", err, vk_result_to_string(err));
     if(err < 0)
-        C4_ERROR("[vulkan] error is fatal aborting: %s", vk_result_to_string(err).str);
+        C4_ERROR("[vulkan] error is fatal. aborting: %s", vk_result_to_string(err).str);
 }
 
 
@@ -949,7 +950,7 @@ void UploadBuffer::destroy()
 
 VkDeviceSize UploadBuffer::require(Rhi &rhi, VkDeviceSize num_bytes)
 {
-    VkDeviceSize actual_size = rhi.required_buffer_size(num_bytes);
+    VkDeviceSize actual_size = rhi.required_buffer_size(num_bytes, VkDeviceSize(1));
     C4_ASSERT(actual_size >= num_bytes);
     m_pos = 0;
     if(actual_size > m_buf.size)
@@ -970,22 +971,24 @@ VkDeviceSize UploadBuffer::require(Rhi &rhi, VkDeviceSize num_bytes)
     return actual_size;
 }
 
-VkDeviceSize UploadBuffer::add(Rhi &rhi, void const *mem, VkDeviceSize sz)
+VkDeviceSize UploadBuffer::add(Rhi &rhi, void const *mem, VkDeviceSize sz, VkDeviceSize texelSz)
 {
-    C4_CHECK(m_pos + sz <= m_buf.size);
-    VkDeviceSize offset = m_pos;
+    VkDeviceSize mappedSize = rhi.required_buffer_size(sz, texelSz); // sz must be a multiple
+    VkDeviceSize offset = next_multiple(m_pos, texelSz);
+    //printf("--- add: sz=%zu->%zu pos=%zu->%zu!\n", sz, mappedSize, m_pos, offset);
+    C4_CHECK(offset + mappedSize <= m_buf.size);
     void* map = nullptr;
-    C4_CHECK_VK(vkMapMemory(rhi.m_device, m_buf.mem, offset, sz, /*flags*/0, &map));
+    C4_CHECK_VK(vkMapMemory(rhi.m_device, m_buf.mem, offset, mappedSize, /*flags*/0, &map));
     memcpy(map, mem, sz);
-    VkMappedMemoryRange range[1] = {};
-    range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    range[0].memory = m_buf.mem;
-    range[0].offset = m_pos;
-    range[0].size = sz;
-    C4_CHECK_VK(vkFlushMappedMemoryRanges(rhi.m_device, 1, range));
+    VkMappedMemoryRange range = {};
+    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range.memory = m_buf.mem;
+    range.offset = offset;
+    range.size = mappedSize;
+    C4_CHECK_VK(vkFlushMappedMemoryRanges(rhi.m_device, 1, &range));
     vkUnmapMemory(rhi.m_device, m_buf.mem);
-    // update the offset
-    m_pos += sz;
+    m_pos = offset + mappedSize;
+    //printf("--- add ok!\n");
     return offset;
 }
 
@@ -1043,12 +1046,20 @@ void Rhi::mark_usr_cmd_buffer()
     g_MainWindowData.Frames[g_MainWindowData.FrameIndex].CommandBuffer2Used = true;
 }
 
-size_t Rhi::required_buffer_size(size_t wanted) const
+VkDeviceSize Rhi::required_buffer_size(VkDeviceSize wanted, VkDeviceSize texelSize) const
 {
     C4_ASSERT(m_non_coherent_atom_size > 0);
-    const size_t result = next_multiple(wanted, m_non_coherent_atom_size);
+    const VkDeviceSize lcm = std::lcm(m_non_coherent_atom_size, texelSize);
+    const VkDeviceSize result = next_multiple(wanted, lcm);
+    printf("wanted=%lu(0x%x) noncoherentatomsize=%zu(0x%x) result=%zu(0x%x) rem=%zu(0x%xu)\n",
+           wanted, (unsigned)wanted,
+           m_non_coherent_atom_size, (unsigned)m_non_coherent_atom_size,
+           result, (unsigned)result,
+           result % m_non_coherent_atom_size, (unsigned)(result % m_non_coherent_atom_size)
+        );
     C4_ASSERT(result >= wanted);
-    C4_ASSERT((result % m_non_coherent_atom_size) == size_t(0));
+    C4_ASSERT((result % m_non_coherent_atom_size) == VkDeviceSize(0));
+    C4_ASSERT((result % texelSize) == VkDeviceSize(0));
     return result;
 }
 
@@ -1065,7 +1076,7 @@ void Rhi::upload_image(image_id id, ImageLayout const& layout, ccharspan data, V
     size_t num_bytes = layout.num_bytes();
     (void)use_upload_buffer_with(num_bytes);
     // copy to the staging upload buffer
-    VkDeviceSize offset = m_upload_buffer.add(*this, data.data(), data.size()); // this ensures adequate room
+    VkDeviceSize offset = m_upload_buffer.add(*this, data.data(), data.size(), (VkDeviceSize)layout.num_bytes_per_pixel()); // this ensures adequate room
     // now upload
     upload_image(id, layout, data, cmdbuf, &m_upload_buffer, offset);
 }

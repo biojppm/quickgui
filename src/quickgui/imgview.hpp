@@ -20,10 +20,9 @@ struct imgviewtype
         u32,
         i32,
         f32,
-        u64,
-        i64,
         f64,
         // nothing else is supported
+        _num_types
     } data_type_e;
 
     static uint32_t data_size(data_type_e dt) noexcept
@@ -40,10 +39,8 @@ struct imgviewtype
         case i32:
         case f32:
             return 4u;
-        case u64:
-        case i64:
         case f64:
-            return 4u;
+            return 8u;
         default:
             break;
         }

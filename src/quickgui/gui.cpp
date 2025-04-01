@@ -150,11 +150,13 @@ VkFormat imgview_format(imgviewtype::data_type_e type, size_t num_channels)
     static_assert(imgviewtype::i32 == 5);
     static_assert(imgviewtype::f32 == 6);
     static_assert(C4_COUNTOF(formats) >= 28);
-    C4_ASSERT(type >= 0);
-    C4_ASSERT(type <= 6);
-    C4_ASSERT(num_channels > 0);
-    C4_ASSERT(num_channels <= 4);
-    return formats[4 * type + (int)num_channels - 1];
+    C4_CHECK(type >= 0);
+    C4_CHECK(type <= 6);
+    C4_CHECK(num_channels > 0);
+    C4_CHECK(num_channels <= 4);
+    const size_t pos = 4 * type + (size_t)((int)num_channels - 1);
+    C4_CHECK(pos < C4_COUNTOF(formats));
+    return formats[pos];
 }
 
 quickgui::rhi::ImageLayout imgview_layout(imgview const& s)
@@ -272,7 +274,7 @@ bool toggle_full_screen(SDL_Window *w)
 rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& layout, ccharspan data, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
 {
     auto img_id = r->make_image(layout.to_vk());
-    VkDeviceSize offset = upload_buffer->add(rhi::g_rhi, data.data(), data.size());
+    VkDeviceSize offset = upload_buffer->add(rhi::g_rhi, data.data(), data.size(), (VkDeviceSize)layout.num_bytes_per_pixel());
     r->set_name(img_id, filename);
     r->upload_image(img_id, layout, data, cmd, upload_buffer, offset);
     return img_id;
@@ -288,7 +290,7 @@ rhi::image_id load_image_2d_rgba(const char *filename, rhi::ImageLayout const& l
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd, rhi::UploadBuffer *upload_buffer)
 {
     auto layout = stb_layout(data);
-    (void)upload_buffer->add(rhi::g_rhi, data.data, data.data_size());
+    (void)upload_buffer->add(rhi::g_rhi, data.data, data.data_size(), (VkDeviceSize)layout.num_bytes_per_pixel());
     return load_image_2d_rgba(filename, layout, data.to_span(), r, cmd, upload_buffer);
 }
 rhi::image_id load_image_2d_rgba(const char *filename, stb_image_data const& data, rhi::Rhi *r, VkCommandBuffer cmd)
