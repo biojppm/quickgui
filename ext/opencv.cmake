@@ -8,24 +8,39 @@ option(QUICKGUI_OPENCV_BUILD "" OFF)
 if(NOT QUICKGUI_OPENCV_BUILD)
     find_package(OpenCV REQUIRED)
 else()
+    if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "")
+        message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR is not set")
+    endif()
     set(QUICKGUI_OPENCV_REPO https://github.com/opencv/opencv CACHE STRING "")
+    set(QUICKGUI_OPENCV_CONTRIB_REPO https://github.com/opencv/opencv_contrib CACHE STRING "")
     set(QUICKGUI_OPENCV_VERSION 4.7.0 CACHE STRING "")
+    option(QUICKGUI_OPENCV_CONTRIB "enable contrib modules" OFF)
     # use only these modules:
     set(QUICKGUI_OPENCV_MODULES core imgproc imgcodecs)
-    option(QUICKGUI_OPENCV_VIDEO "" OFF)
+    set(QUICKGUI_OPENCV_CONTRIB_MODULES)
+    option(QUICKGUI_OPENCV_VIDEO "enable video modules: video videoio" OFF)
     if(QUICKGUI_OPENCV_VIDEO)
         list(APPEND QUICKGUI_OPENCV_MODULES video videoio)
     endif()
     set(QUICKGUI_OPENCV_MODULES_EXTRA "" CACHE STRING "")
+    set(QUICKGUI_OPENCV_CONTRIB_MODULES_EXTRA "" CACHE STRING "")
     list(APPEND QUICKGUI_OPENCV_MODULES ${QUICKGUI_OPENCV_MODULES_EXTRA})
+    list(APPEND QUICKGUI_OPENCV_CONTRIB_MODULES ${QUICKGUI_OPENCV_CONTRIB_MODULES_EXTRA})
     set(QUICKGUI_OPENCV_MODULES_)
     set(QUICKGUI_OPENCV_LIBRARIES)
-    foreach(mod ${QUICKGUI_OPENCV_MODULES})
+    foreach(mod ${QUICKGUI_OPENCV_MODULES} ${QUICKGUI_OPENCV_CONTRIB_MODULES})
         set(QUICKGUI_OPENCV_MODULES_ "${QUICKGUI_OPENCV_MODULES_}${mod},")
         list(APPEND QUICKGUI_OPENCV_LIBRARIES opencv_${mod})
     endforeach()
-    if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "")
-        c4_err("CMAKE_SYSTEM_PROCESSOR is not set???")
+    if(QUICKGUI_OPENCV_CONTRIB)
+        c4_download_remote_proj(opencv_contrib opencvcontribdir
+            GIT_REPOSITORY ${QUICKGUI_OPENCV_CONTRIB_REPO}
+            GIT_TAG ${QUICKGUI_OPENCV_VERSION}
+            GIT_SHALLOW ON
+        )
+        set(contrib_overrides
+            OPENCV_EXTRA_MODULES_PATH ${opencvcontribdir}/modules
+        )
     endif()
     c4_require_subproject(opencv
         REMOTE
@@ -41,6 +56,7 @@ else()
             WITH_VULKAN ON
             BUILD_TESTS OFF
             BUILD_PERF_TESTS OFF
+            ${contrib_overrides}
         SET_FOLDER_TARGETS ext/opencv
             opencv_highgui_plugins
             opencv_modules
@@ -52,6 +68,7 @@ else()
             opencv_highgui
             opencv_imgcodecs
             opencv_imgproc
+            opencv_ximgproc
             opencv_perf_core
             opencv_perf_imgcodecs
             opencv_perf_imgproc
@@ -79,6 +96,17 @@ else()
             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
             $<BUILD_INTERFACE:${opencvdir}/modules/${mod}/include>
             $<BUILD_INTERFACE:${opencvdir}/include>
+            )
+        # setup the cv module dependencies
+        if(NOT (mod STREQUAL core))
+            target_link_libraries(opencv_${mod} PUBLIC opencv_core)
+        endif()
+    endforeach()
+    foreach(mod ${QUICKGUI_OPENCV_CONTRIB_MODULES})
+        # setup the include directories for each cv module:
+        target_include_directories(opencv_${mod} PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+            $<BUILD_INTERFACE:${opencvcontribdir}/modules/${mod}/include>
             )
         # setup the cv module dependencies
         if(NOT (mod STREQUAL core))
