@@ -601,6 +601,9 @@ uint32_t vk_num_bytes_per_pixel(VkFormat f)
         case VK_FORMAT_R8G8B8A8_UNORM:
         case VK_FORMAT_R8G8B8A8_SSCALED:
         case VK_FORMAT_R8G8B8A8_USCALED:
+        case VK_FORMAT_R32_UINT:
+        case VK_FORMAT_R32_SINT:
+        case VK_FORMAT_R32_SFLOAT:
             return UINT32_C(4);
         default:
             C4_NOT_IMPLEMENTED();
