@@ -583,8 +583,13 @@ uint32_t vk_num_bytes_per_pixel(VkFormat f)
         case VK_FORMAT_R8G8_UNORM:
         case VK_FORMAT_R8G8_SSCALED:
         case VK_FORMAT_R8G8_USCALED:
+        case VK_FORMAT_R16_SINT:
+        case VK_FORMAT_R16_UINT:
         case VK_FORMAT_R16_SNORM:
         case VK_FORMAT_R16_UNORM:
+        case VK_FORMAT_R16_USCALED:
+        case VK_FORMAT_R16_SSCALED:
+        case VK_FORMAT_R16_SFLOAT:
             return UINT32_C(2);
         case VK_FORMAT_R8G8B8_SINT:
         case VK_FORMAT_R8G8B8_UINT:
@@ -601,10 +606,44 @@ uint32_t vk_num_bytes_per_pixel(VkFormat f)
         case VK_FORMAT_R8G8B8A8_UNORM:
         case VK_FORMAT_R8G8B8A8_SSCALED:
         case VK_FORMAT_R8G8B8A8_USCALED:
+        case VK_FORMAT_R16G16_SINT:
+        case VK_FORMAT_R16G16_UINT:
+        case VK_FORMAT_R16G16_SNORM:
+        case VK_FORMAT_R16G16_UNORM:
+        case VK_FORMAT_R16G16_USCALED:
+        case VK_FORMAT_R16G16_SSCALED:
+        case VK_FORMAT_R16G16_SFLOAT:
         case VK_FORMAT_R32_UINT:
         case VK_FORMAT_R32_SINT:
         case VK_FORMAT_R32_SFLOAT:
             return UINT32_C(4);
+        case VK_FORMAT_R16G16B16_SINT:
+        case VK_FORMAT_R16G16B16_UINT:
+        case VK_FORMAT_R16G16B16_SNORM:
+        case VK_FORMAT_R16G16B16_UNORM:
+        case VK_FORMAT_R16G16B16_USCALED:
+        case VK_FORMAT_R16G16B16_SSCALED:
+        case VK_FORMAT_R16G16B16_SFLOAT:
+            return UINT32_C(6);
+        case VK_FORMAT_R32G32_UINT:
+        case VK_FORMAT_R32G32_SINT:
+        case VK_FORMAT_R32G32_SFLOAT:
+        case VK_FORMAT_R16G16B16A16_SINT:
+        case VK_FORMAT_R16G16B16A16_UINT:
+        case VK_FORMAT_R16G16B16A16_SNORM:
+        case VK_FORMAT_R16G16B16A16_UNORM:
+        case VK_FORMAT_R16G16B16A16_USCALED:
+        case VK_FORMAT_R16G16B16A16_SSCALED:
+        case VK_FORMAT_R16G16B16A16_SFLOAT:
+            return UINT32_C(8);
+        case VK_FORMAT_R32G32B32_UINT:
+        case VK_FORMAT_R32G32B32_SINT:
+        case VK_FORMAT_R32G32B32_SFLOAT:
+            return UINT32_C(12);
+        case VK_FORMAT_R32G32B32A32_UINT:
+        case VK_FORMAT_R32G32B32A32_SINT:
+        case VK_FORMAT_R32G32B32A32_SFLOAT:
+            return UINT32_C(16);
         default:
             C4_NOT_IMPLEMENTED();
     }
