@@ -48,6 +48,33 @@ struct imgviewtype
         return 0u;
     }
 
+    static const char* to_str(data_type_e dt) noexcept
+    {
+        switch(dt)
+        {
+        case u8:
+            return "u8";
+        case i8:
+            return "i8";
+        case u16:
+            return "u16";
+        case i16:
+            return "i16";
+        case u32:
+            return "u32";
+        case i32:
+            return "i32";
+        case f32:
+            return "f32";
+        case f64:
+            return "f64";
+        default:
+            break;
+        }
+        C4_ERROR("unknown data type");
+        return 0u;
+    }
+
     template<class T>
     static data_type_e from() noexcept
     {
@@ -172,9 +199,9 @@ public:
 
     #define _typecheck(T)\
         C4_XASSERT(sizeof(T) == num_bytes_per_channel()); \
-        C4_XASSERT(std::is_integral_v<T> == ((data_type == imgviewtype::u8) || (data_type == imgviewtype::i8) || (data_type == imgviewtype::u16) || (data_type == imgviewtype::u32) || (data_type == imgviewtype::i32))); \
-        C4_XASSERT(std::is_signed_v<T> == ((data_type == imgviewtype::i8) || (data_type == imgviewtype::i32) || (data_type == imgviewtype::f32))); \
-        C4_XASSERT(std::is_floating_point_v<T> == (data_type == imgviewtype::f32)) \
+        C4_XASSERT(std::is_integral_v<T> == ((data_type == imgviewtype::u8) || (data_type == imgviewtype::i8) || (data_type == imgviewtype::i16) || (data_type == imgviewtype::u16) || (data_type == imgviewtype::u32) || (data_type == imgviewtype::i32))); \
+        C4_XASSERT(std::is_signed_v<T> == ((data_type == imgviewtype::i8) || (data_type == imgviewtype::i16) || (data_type == imgviewtype::i32) || (data_type == imgviewtype::f32))); \
+        C4_XASSERT(std::is_floating_point_v<T> == ((data_type == imgviewtype::f32) || (data_type == imgviewtype::f64))) \
 
     template<class U>
     auto data_as() const noexcept
@@ -262,12 +289,10 @@ using imgview = basic_imgview<const uint8_t>;
 //-----------------------------------------------------------------------------
 
 imgview make_imgview(void const* buf, uint32_t sz, imgview const& blueprint);
-wimgview make_wimgview(void *buf, uint32_t sz, imgview const& blueprint);
+wimgview make_wimgview(void /**/*buf, uint32_t sz, imgview const& blueprint);
 
-imgview make_imgview(void const* buf, uint32_t sz, uint32_t width, uint32_t height,
-                      uint32_t num_channels, imgview::data_type_e data_type);
-wimgview make_wimgview(void *buf, uint32_t sz, uint32_t width, uint32_t height,
-                      uint32_t num_channels, imgview::data_type_e data_type);
+imgview make_imgview(void const* buf, uint32_t sz, uint32_t width, uint32_t height, uint32_t num_channels, imgview::data_type_e data_type);
+wimgview make_wimgview(void /**/*buf, uint32_t sz, uint32_t width, uint32_t height, uint32_t num_channels, imgview::data_type_e data_type);
 
 
 //-----------------------------------------------------------------------------
@@ -394,11 +419,30 @@ void save_pfm(imgview const& C4_RESTRICT v)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+void check_img(imgview const& C4_RESTRICT img);
+void check_pair(imgview const& C4_RESTRICT img0, imgview const& C4_RESTRICT img1);
+
+wimgview copy_img(imgview const& C4_RESTRICT src, void *buf, uint32_t bufsz) noexcept;
+void copy_img(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+
 void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
 void vflip(wimgview & C4_RESTRICT img) noexcept;
+
 // swap the red and blue channels
 void swaprb(wimgview & C4_RESTRICT img) noexcept;
 void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept;
+
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
+
+void hshift(wimgview & C4_RESTRICT img, int32_t offs) noexcept;
+void hshift(imgview const& C4_RESTRICT src, wimgview &C4_RESTRICT dst, int32_t offs) noexcept;
+
+void vshift(wimgview & C4_RESTRICT img, int32_t offs) noexcept;
+void vshift(imgview const& C4_RESTRICT src, wimgview &C4_RESTRICT dst, int32_t offs) noexcept;
 
 
 //-----------------------------------------------------------------------------

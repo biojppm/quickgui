@@ -3,6 +3,7 @@
 
 #include "quickgui/time.hpp"
 #include "quickgui/gui.hpp"
+#include "c4/format.hpp"
 #include <math.h>
 
 C4_SUPPRESS_WARNING_MSVC_WITH_PUSH(4127) // conditional expression is constant
@@ -69,6 +70,29 @@ ImRect get_current_plot_rect();
 void set_column_padding_for_aligned_right_contents(c4::csubstr txt);
 void set_column_contents_aligned_right(c4::csubstr txt);
 void set_column_contents_aligned_right(int col, c4::csubstr txt);
+
+
+C4_CONST C4_ALWAYS_INLINE ImVec4 toim(fcolor c) noexcept
+{
+    return ImVec4(c.r, c.g, c.b, c.a);
+}
+
+template<class... Args> void setcol(c4::substr buf, Args const &...args) noexcept
+{
+    ImGui::TableNextColumn();
+    c4::csubstr txt = c4::cat_sub(buf, args..., '\0');
+    widgets::set_column_contents_aligned_right(txt);
+}
+
+template<class... Args> void setcol(c4::substr buf, ucolor color, Args const &...args) noexcept
+{
+    ImGui::TableNextColumn();
+    c4::csubstr txt = c4::cat_sub(buf, args..., '\0');
+    ImGui::PushStyleColor(ImGuiCol_Text, toim(color));
+    widgets::set_column_contents_aligned_right(txt);
+    ImGui::PopStyleColor();
+}
+
 
 
 //-----------------------------------------------------------------------------
@@ -251,6 +275,96 @@ struct WidgetState
     bool show_plot_demo_widget = false;
     //
     ImVec4 clear_color = {1.f/255.f, 19.f/255.f, 26.f/255.f, 1.f}; // the background color
+};
+
+
+struct ImgCanvasSizeWidgets
+{
+    int canvasSize;
+    int canvasSizeItem;
+    ImgCanvasSizeWidgets() : canvasSize(512), canvasSizeItem(3) {}
+    ImgCanvasSizeWidgets(int sz) : canvasSize(sz), canvasSizeItem(getItem(sz, sz)) {}
+    void draw(int imgdim)
+    {
+        ImGui::PushID(this);
+        canvasSize = getSize(canvasSizeItem, imgdim);
+        int currsz = canvasSize;
+        const char *tooltip = "in-window size of the image";
+        ImGui::Text("Image Display Size:");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(120.f);
+        if (ImGui::Combo("preset", &canvasSizeItem, combo_items, IM_ARRAYSIZE(combo_items))) {
+            canvasSize = getSize(canvasSizeItem, imgdim);
+        }
+        widgets::set_hover_tooltip(tooltip);
+        ImGui::SetNextItemWidth(120.f);
+        ImGui::SameLine();
+        if (ImGui::InputInt("custom", &currsz)) {
+            canvasSize = currsz;
+            canvasSizeItem = getItem(currsz, currsz);
+        }
+        widgets::set_tooltip(tooltip);
+        ImGui::PopID();
+    }
+    void draw()
+    {
+        draw(canvasSize);
+    }
+    ImVec2 draw(GuiImage const& img)
+    {
+        int maxdim = canvasSize;
+        draw(maxdim);
+        return img.size_with_maxdim((float)canvasSize);
+    }
+    ImVec2 draw(GuiImage const& img, uint32_t width, uint32_t height)
+    {
+        int maxdim = (int)quickgui::min(width, height);
+        draw(maxdim);
+        return img.size_with_maxdim((float)canvasSize);
+    }
+    static constexpr inline const char *const combo_items[] = {
+        "original",
+        "custom",
+        "256",
+        "512",
+        "1024",
+        "2048",
+        "4096",
+        "8192"
+    };
+    int getSize(int item, int imgdim)
+    {
+        switch (item) {
+        case 0: return imgdim;
+        case 1: return canvasSize;
+        case 2: return 256;
+        case 3: return 512;
+        case 4: return 1024;
+        case 5: return 2048;
+        case 6: return 4096;
+        case 7: return 8192;
+        default:
+            break;
+        }
+        return 512;
+    }
+    int getItem(int sz, int imgdim)
+    {
+        switch (sz) {
+        case  256: return 2;
+        case  512: return 3;
+        case 1024: return 4;
+        case 2048: return 5;
+        case 4096: return 6;
+        case 8192: return 7;
+        default:
+            if (sz == imgdim)
+                return 0;
+            else if (sz == canvasSize)
+                return 1;
+        }
+        return 3;
+    }
 };
 
 

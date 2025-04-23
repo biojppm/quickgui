@@ -1,5 +1,4 @@
 #include "quickgui/widgets.hpp"
-
 #include "quickgui/sdl.hpp"
 
 namespace quickgui {

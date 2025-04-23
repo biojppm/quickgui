@@ -274,14 +274,46 @@ imgview make_imgview(void const* buf, uint32_t sz, uint32_t width, uint32_t heig
     return v;
 }
 
-void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
+
+//-----------------------------------------------------------------------------
+
+void check_img(imgview const& C4_RESTRICT img)
 {
-    C4_CHECK(src.data_type == imgviewtype::u8);
-    C4_CHECK(dst.data_type == imgviewtype::u8);
+    C4_CHECK(img.buf != NULL);
+    C4_CHECK(img.bytes_required() <= img.buf_size);
+}
+void check_pair(imgview const& C4_RESTRICT src, imgview const& C4_RESTRICT dst)
+{
+    check_img(src);
+    check_img(dst);
     C4_CHECK(src.buf != dst.buf);
+    C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     C4_CHECK(src.width == dst.width);
     C4_CHECK(src.height == dst.height);
     C4_CHECK(src.num_channels == dst.num_channels);
+    C4_CHECK(src.data_type == dst.data_type);
+    C4_CHECK(src.bytes_required() <= src.buf_size);
+    C4_CHECK(dst.bytes_required() <= dst.buf_size);
+}
+
+wimgview copy_img(imgview const& C4_RESTRICT src, void *buf, uint32_t bufsz) noexcept
+{
+    wimgview dst = make_wimgview(buf, bufsz, src);
+    C4_CHECK(dst.buf != NULL);
+    check_pair(src, dst);
+    memcpy(dst.buf, src.buf, src.bytes_required());
+    return dst;
+}
+
+void copy_img(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
+{
+    dst = copy_img(src, dst.buf, dst.buf_size);
+}
+
+
+void vflip(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst) noexcept
+{
+    check_pair(src, dst);
     C4_CHECK(!c4::mem_overlaps(src.buf, dst.buf, src.bytes_required(), dst.bytes_required()));
     using T = int8_t;
     using I = int32_t;
@@ -441,6 +473,81 @@ void convert_channels(imgview const& C4_RESTRICT src, wimgview & C4_RESTRICT dst
         C4_NOT_IMPLEMENTED();
     }
     #undef iterview
+}
+
+
+void hshift(imgview const& C4_RESTRICT src, wimgview &C4_RESTRICT dst, int32_t offs) noexcept
+{
+    copy_img(src, dst);
+    check_pair(src, dst);
+    hshift(dst, offs);
+}
+void vshift(imgview const& C4_RESTRICT src, wimgview &C4_RESTRICT dst, int32_t offs) noexcept
+{
+    copy_img(src, dst);
+    check_pair(src, dst);
+    vshift(dst, offs);
+}
+void hshift(wimgview & C4_RESTRICT img, int32_t offs) noexcept
+{
+    check_img(img);
+    if(!offs)
+        return;
+    const size_t bytes_pixel = img.num_channels * img.num_bytes_per_channel();
+    const size_t bytes_row = (size_t)img.width * bytes_pixel;
+    static_assert(sizeof(img.buf[0]) == 1u);
+    uint8_t *buf = (uint8_t*)img.buf;
+    if(offs > 0)
+    {
+        C4_CHECK((uint32_t)offs <= img.width);
+        const size_t bytes_offs = (size_t)offs * bytes_pixel;
+        const size_t bytes_copy = bytes_row - bytes_offs;
+        for(uint32_t row = 0; row < img.height; ++row)
+        {
+            uint8_t const* src = buf + row * bytes_row;
+            uint8_t /* */* dst = buf + row * bytes_row + bytes_offs;
+            memmove(dst, src, bytes_copy);
+        }
+    }
+    else
+    {
+        C4_CHECK((uint32_t)(-offs) <= img.width);
+        const size_t bytes_offs = (size_t)(offs) * bytes_pixel;
+        const size_t bytes_copy = bytes_row - bytes_offs;
+        uint8_t *buf = (uint8_t*)img.buf;
+        for(uint32_t row = 0; row < img.height; ++row)
+        {
+            uint8_t /* */* dst = buf + row * bytes_row;
+            uint8_t const* src = dst + bytes_offs;
+            memmove(dst, src, bytes_copy);
+        }
+    }
+}
+void vshift(wimgview & C4_RESTRICT img, int32_t offs) noexcept
+{
+    check_img(img);
+    if(!offs)
+        return;
+    const size_t bytes_pixel = img.num_channels * img.num_bytes_per_channel();
+    const size_t bytes_row = (size_t)img.width * bytes_pixel;
+    static_assert(sizeof(img.buf[0]) == 1u);
+    uint8_t *buf = (uint8_t*)img.buf;
+    if(offs > 0)
+    {
+        const uint32_t uoffs = (uint32_t)offs;
+        C4_CHECK(uoffs <= img.width);
+        uint8_t const* src = buf;
+        uint8_t /* */* dst = buf + uoffs * bytes_row;
+        memmove(dst, src, bytes_row);
+    }
+    else
+    {
+        const uint32_t uoffs = (uint32_t)-offs;
+        C4_CHECK(uoffs <= img.width);
+        uint8_t const* src = buf + uoffs * bytes_row;
+        uint8_t /* */* dst = buf;
+        memmove(dst, src, bytes_row);
+    }
 }
 
 
